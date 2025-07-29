@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Claude Flow Init Wizard - Assistente de Inicialização" />
+    <title>🚀 Claude Flow - Assistente de Inicialização</title>
+    <link rel="stylesheet" href="styles/console.css" />
+    <link rel="stylesheet" href="styles/init-wizard.css" />
+    <link rel="stylesheet" href="styles/responsive.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="init-wizard-body">
+    <!-- Header -->
+    <header class="wizard-header">
+      <div class="header-content">
+        <h1 class="wizard-title">
+          <span class="icon">🚀</span>
+          Claude Flow - Assistente de Inicialização
+        </h1>
+        <div class="progress-indicator">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span class="progress-text" id="progressText">Passo 1 de 5</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="wizard-main">
+      <!-- Step 1: Tipo de Projeto -->
+      <section class="wizard-step active" id="step1">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">📋</span>
+            Configuração do Projeto
+          </h2>
+          <p class="step-description">
+            Selecione o tipo de projeto e configurações iniciais para o Claude Flow.
+          </p>
+          
+          <div class="form-group">
+            <label for="projectType" class="form-label">Tipo de Projeto:</label>
+            <select id="projectType" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="full">Projeto Completo (Recomendado)</option>
+              <option value="sparc">Projeto SPARC (TDD)</option>
+              <option value="minimal">Configuração Mínima</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="projectName" class="form-label">Nome do Projeto:</label>
+            <input type="text" id="projectName" class="form-input" placeholder="meu-projeto">
+          </div>
+
+          <div class="form-group">
+            <label for="projectDescription" class="form-label">Descrição:</label>
+            <textarea id="projectDescription" class="form-textarea" placeholder="Descrição do projeto..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Configuração de Agentes -->
+      <section class="wizard-step" id="step2">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">🤖</span>
+            Configuração de Agentes
+          </h2>
+          <p class="step-description">
+            Configure os agentes que serão utilizados no seu projeto.
+          </p>
+          
+          <div class="agent-grid">
+            <div class="agent-card" data-agent="coder">
+              <div class="agent-header">
+                <span class="agent-icon">👨‍💻</span>
+                <h3>Coder</h3>
+              </div>
+              <p>Especialista em implementação de código</p>
+              <label class="agent-toggle">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="agent-card" data-agent="tester">
+              <div class="agent-header">
+                <span class="agent-icon">🧪</span>
+                <h3>Tester</h3>
+              </div>
+              <p>Criação e validação de testes</p>
+              <label class="agent-toggle">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="agent-card" data-agent="architect">
+              <div class="agent-header">
+                <span class="agent-icon">🏗️</span>
+                <h3>Architect</h3>
+              </div>
+              <p>Design de arquitetura de sistemas</p>
+              <label class="agent-toggle">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="agent-card" data-agent="researcher">
+              <div class="agent-header">
+                <span class="agent-icon">🔍</span>
+                <h3>Researcher</h3>
+              </div>
+              <p>Pesquisa e análise de informações</p>
+              <label class="agent-toggle">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: Configuração MCP -->
+      <section class="wizard-step" id="step3">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">🔌</span>
+            Configuração MCP
+          </h2>
+          <p class="step-description">
+            Configure os servidores MCP (Model Context Protocol) para integração com Claude Code.
+          </p>
+
+          <div class="mcp-config">
+            <div class="config-section">
+              <h3>🌊 Claude Flow MCP</h3>
+              <p>Servidor principal do Claude Flow com orquestração de swarm</p>
+              <label class="config-toggle">
+                <input type="checkbox" id="claudeFlowMcp" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Habilitar Claude Flow MCP</span>
+              </label>
+            </div>
+
+            <div class="config-section">
+              <h3>🐝 Ruv-Swarm MCP</h3>
+              <p>Servidor ruv-swarm para coordenação avançada</p>
+              <label class="config-toggle">
+                <input type="checkbox" id="ruvSwarmMcp" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Habilitar Ruv-Swarm MCP</span>
+              </label>
+            </div>
+
+            <div class="config-section">
+              <h3>⚡ Configuração Automática</h3>
+              <p>Configurar automaticamente os servidores MCP no Claude Code</p>
+              <label class="config-toggle">
+                <input type="checkbox" id="autoSetupMcp" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Configuração Automática</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4: Estrutura de Arquivos -->
+      <section class="wizard-step" id="step4">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">📁</span>
+            Estrutura de Arquivos
+          </h2>
+          <p class="step-description">
+            Defina a estrutura de diretórios e arquivos que serão criados.
+          </p>
+
+          <div class="file-structure">
+            <div class="structure-preview" id="structurePreview">
+              <div class="file-tree">
+                <div class="tree-item folder">
+                  <span class="tree-icon">📁</span>
+                  <span class="tree-name">.claude/</span>
+                  <div class="tree-children">
+                    <div class="tree-item file">
+                      <span class="tree-icon">📄</span>
+                      <span class="tree-name">CLAUDE.md</span>
+                    </div>
+                    <div class="tree-item file">
+                      <span class="tree-icon">⚙️</span>
+                      <span class="tree-name">settings.json</span>
+                    </div>
+                    <div class="tree-item folder">
+                      <span class="tree-icon">📁</span>
+                      <span class="tree-name">commands/</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="tree-item folder">
+                  <span class="tree-icon">📁</span>
+                  <span class="tree-name">memory/</span>
+                </div>
+                <div class="tree-item file">
+                  <span class="tree-icon">📄</span>
+                  <span class="tree-name">memory-bank.md</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="structure-options">
+              <h3>Opções da Estrutura</h3>
+              <label class="option-checkbox">
+                <input type="checkbox" id="createGitignore" checked>
+                <span class="checkbox-label">Criar/Atualizar .gitignore</span>
+              </label>
+              <label class="option-checkbox">
+                <input type="checkbox" id="createMemoryStructure" checked>
+                <span class="checkbox-label">Criar estrutura de memória</span>
+              </label>
+              <label class="option-checkbox">
+                <input type="checkbox" id="createSparcStructure">
+                <span class="checkbox-label">Criar estrutura SPARC</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 5: Confirmação e Execução -->
+      <section class="wizard-step" id="step5">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">✅</span>
+            Confirmação e Execução
+          </h2>
+          <p class="step-description">
+            Revise suas configurações e execute a inicialização do projeto.
+          </p>
+
+          <div class="config-summary" id="configSummary">
+            <!-- Será preenchido dinamicamente -->
+          </div>
+
+          <div class="execution-section">
+            <div class="execution-options">
+              <label class="option-checkbox">
+                <input type="checkbox" id="dryRun">
+                <span class="checkbox-label">Execução em modo teste (Dry Run)</span>
+              </label>
+              <label class="option-checkbox">
+                <input type="checkbox" id="verbose" checked>
+                <span class="checkbox-label">Saída detalhada</span>
+              </label>
+            </div>
+
+            <div class="command-preview">
+              <h3>Comando que será executado:</h3>
+              <div class="command-display" id="commandDisplay">
+                <!-- Será preenchido dinamicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Execution Progress -->
+      <section class="wizard-step" id="stepExecution" style="display: none;">
+        <div class="step-content">
+          <h2 class="step-title">
+            <span class="step-icon">⚙️</span>
+            Executando Inicialização
+          </h2>
+          <p class="step-description">
+            Aguarde enquanto configuramos seu projeto...
+          </p>
+
+          <div class="execution-progress">
+            <div class="progress-spinner"></div>
+            <div class="execution-log" id="executionLog">
+              <!-- Log será preenchido durante a execução -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Navigation Footer -->
+    <footer class="wizard-footer">
+      <div class="footer-content">
+        <button class="btn btn-secondary" id="prevBtn" disabled>
+          ← Anterior
+        </button>
+        <div class="step-indicators" id="stepIndicators">
+          <span class="indicator active" data-step="1"></span>
+          <span class="indicator" data-step="2"></span>
+          <span class="indicator" data-step="3"></span>
+          <span class="indicator" data-step="4"></span>
+          <span class="indicator" data-step="5"></span>
+        </div>
+        <button class="btn btn-primary" id="nextBtn">
+          Próximo →
+        </button>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/init-api.js"></script>
+    <script src="js/init-wizard.js"></script>
+  </body>
+</html>
