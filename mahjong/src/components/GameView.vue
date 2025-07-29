@@ -5,39 +5,39 @@
       <div class="main-menu-content">
         <div class="decorative-border top"></div>
         <h1 class="title" data-text="Mahjong Solitaire">Mahjong<br/>Solitaire</h1>
-        <div class="subtitle">Ancient Game of Tiles</div>
+        <div class="subtitle">Jogo Ancestral de Peças</div>
         <div class="decorative-border bottom"></div>
       </div>
     </AppModal>
 
     <!-- Restart Dialog -->
     <AppModal v-if="showRestartDialog" :actions="restartGameModalActions" @close="showRestartDialog = false">
-      <h1>Choose restart option:</h1>
+      <h1>Escolha uma opção de reinício:</h1>
       <p style="margin: 15px 0;">
-        <strong>Shuffle Remaining:</strong> Keep playing with current tiles in new positions<br/>
-        <strong>Restart Current:</strong> Start over with the same layout<br/>
-        <strong>Start New:</strong> Begin a completely new game
+        <strong>Embaralhar Restantes:</strong> Continue jogando com as peças atuais em novas posições<br/>
+        <strong>Reiniciar Atual:</strong> Recomeça com o mesmo layout<br/>
+        <strong>Novo Jogo:</strong> Inicia um jogo completamente novo
       </p>
     </AppModal>
 
     <!-- No More Moves Modal -->
     <AppModal v-if="showTieModal" :actions="tieModalActions">
-      <h1>No More Free Pairs Left</h1>
-      <p>There are no more matching tiles that can be removed.</p>
-      <p>Choose your next move:</p>
+      <h1>Sem Mais Pares Disponíveis</h1>
+      <p>Não há mais peças correspondentes que possam ser removidas.</p>
+      <p>Escolha sua próxima jogada:</p>
       <ul style="text-align: left; display: inline-block; margin: 10px 0;">
-        <li><strong>Shuffle Remaining:</strong> Mix the remaining tiles to create new matches</li>
-        <li><strong>Restart Current:</strong> Start over with the same layout</li>
-        <li><strong>Start New:</strong> Begin a completely new game</li>
+        <li><strong>Embaralhar Restantes:</strong> Mistura as peças restantes para criar novas combinações</li>
+        <li><strong>Reiniciar Atual:</strong> Recomeça com o mesmo layout</li>
+        <li><strong>Novo Jogo:</strong> Inicia um jogo completamente novo</li>
       </ul>
     </AppModal>
 
     <!-- Win Modal -->
     <AppModal v-if="showWinModal" :actions="winModalActions">
-      <h1>🎉 Congratulations!</h1>
-      <p>You have successfully cleared all tiles!</p>
-      <p><strong>Your final score: {{ gameStore.score }}</strong></p>
-      <p>Well played! Ready for another journey?</p>
+      <h1>🎉 Parabéns!</h1>
+      <p>Você removeu todas as peças com sucesso!</p>
+      <p><strong>Sua pontuação final: {{ gameStore.score }}</strong></p>
+      <p>Muito bem jogado! Pronto para outra jornada?</p>
     </AppModal>
 
     <div class="game-component">
@@ -176,11 +176,18 @@ const tieModalActions = [
 
 const winModalActions = [
   {
-    label: 'Start Journey Again',
+    label: 'Iniciar Nova Jornada',
     primary: true,
     action: () => {
       showWinModal.value = false;
       startNewGame();
+    }
+  },
+  {
+    label: 'Voltar ao Menu',
+    action: () => {
+      showWinModal.value = false;
+      showMainMenu.value = true;
     }
   }
 ];

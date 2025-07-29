@@ -7,16 +7,16 @@
           @click="onHintClick" 
           class="hint" 
           :class="{ active: hintCurrentlyShowing, permanent: permanentHint }"
-          title="Hint (H) | Permanent hint toggle (Ctrl+D)"
+          title="Dica (H) | Dica permanente (Ctrl+D)"
         >
-          <i class="fa fa-star-o" aria-hidden="true"></i>&nbsp;Hint
+          <i class="fa fa-star-o" aria-hidden="true"></i>&nbsp;Dica
         </span>
 
         <span 
           class="undo" 
           @click="onUndoClick" 
           :class="{ disabled: !gameStore.canUndo }"
-          title="Undo (Ctrl+Z)"
+          title="Desfazer (Ctrl+Z)"
         >
           <i class="fa fa-arrow-left" aria-hidden="true"></i>
         </span>
@@ -24,7 +24,7 @@
           class="redo" 
           @click="onRedoClick" 
           :class="{ disabled: !gameStore.canRedo }"
-          title="Redo (Ctrl+Y)"
+          title="Refazer (Ctrl+Y)"
         >
           <i class="fa fa-arrow-right" aria-hidden="true"></i>
         </span>
@@ -33,7 +33,7 @@
       <!-- middle block -->
       <div class="middle-block">
         <span class="score highlight">
-          Score:&nbsp;{{ score > 0 ? score : 0 }}
+          Pontos:&nbsp;{{ score > 0 ? score : 0 }}
         </span>
 
         <span class="timer">

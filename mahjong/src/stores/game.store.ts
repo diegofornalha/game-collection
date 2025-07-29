@@ -336,7 +336,7 @@ export const useGameStore = defineStore('game', () => {
         tile.startHint();
       });
       
-      console.log(`Found ${matchingPairs.length} matching pairs:`, matchingPairs.map(pair => 
+      console.log(`Encontrados ${matchingPairs.length} pares correspondentes:`, matchingPairs.map(pair => 
         `${pair[0].type?.toString()} <-> ${pair[1].type?.toString()}`
       ));
     } else {
