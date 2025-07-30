@@ -69,7 +69,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 
-const props = defineProps<{
+defineProps<{
   hintsCount: number;
   score: number;
   timer: number;
@@ -87,11 +87,7 @@ const gameStore = useGameStore();
 const isVisible = ref(true);
 const hintCurrentlyShowing = computed(() => gameStore.showHint);
 
-const formattedTime = computed(() => {
-  const minutes = Math.floor(props.timer / 60);
-  const seconds = props.timer % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-});
+// Removido - não usado
 
 function onHintClick() {
   gameStore.requestHint();

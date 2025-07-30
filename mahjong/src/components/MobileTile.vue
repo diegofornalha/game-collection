@@ -61,7 +61,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   select: [tile: MjTile];
-  preview: [tile: Tile];
+  preview: [tile: MjTile];
 }>();
 
 const { vibrate, tileSize } = useMobileUI();

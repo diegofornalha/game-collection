@@ -42,7 +42,12 @@
       
       <DailyStreakIndicator
         v-else
-        :streak="0"
+        :streak="dailyStreakStore.streakData.currentStreak"
+        :is-active="dailyStreakStore.isStreakActive"
+        :vacation-mode="dailyStreakStore.streakData.isVacationMode"
+        :vacation-days-left="dailyStreakStore.vacationDaysLeft"
+        :next-reward="dailyStreakStore.nextReward"
+        :days-until-reward="dailyStreakStore.daysUntilNextReward"
         compact
       />
       
@@ -93,6 +98,7 @@
 import { computed, ref } from 'vue'
 import { useUserProfileStore } from '../stores/gamification/userProfile.store'
 import { useGameStore } from '../stores/game.store'
+import { useDailyStreakStore } from '../stores/gamification/dailyStreak.store'
 import UserAvatar from './common/UserAvatar.vue'
 import UserLevelDisplay from './common/UserLevelDisplay.vue'
 import TokenDisplay from './TokenDisplay.vue'
@@ -116,6 +122,7 @@ const emit = defineEmits<{
 
 const userStore = useUserProfileStore()
 const gameStore = useGameStore()
+const dailyStreakStore = useDailyStreakStore()
 const menuOpen = ref(false)
 
 const computedClasses = computed(() => [

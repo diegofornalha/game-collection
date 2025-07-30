@@ -79,6 +79,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useGameStore } from '@/stores/game.store';
+import { useDailyStreakStore } from '@/stores/gamification/dailyStreak.store';
+import { useUserProfileStore } from '@/stores/gamification/userProfile.store';
 import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
@@ -87,6 +89,8 @@ import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';
 
 const gameStore = useGameStore();
+const dailyStreakStore = useDailyStreakStore();
+const userProfileStore = useUserProfileStore();
 
 // Component refs
 const tileFieldRef = ref<InstanceType<typeof TileField> | null>(null);
@@ -207,6 +211,10 @@ const winModalActions = [
 // Game methods
 function startNewGame() {
   showMainMenu.value = false;
+  
+  // Verificar e atualizar daily streak
+  dailyStreakStore.checkAndUpdateStreak();
+  
   // Wait for next tick to ensure component is ready
   nextTick(() => {
     if (tileFieldRef.value) {
@@ -217,6 +225,10 @@ function startNewGame() {
 
 async function continueGame() {
   showMainMenu.value = false;
+  
+  // Verificar e atualizar daily streak
+  dailyStreakStore.checkAndUpdateStreak();
+  
   await nextTick();
   await loadSavedGame();
 }
@@ -273,6 +285,15 @@ function onTileCleared() {
       // Win
       showWinModal.value = true;
       audioService.play('win');
+      
+      // Recompensar com tokens bonus por completar o jogo durante streak
+      if (dailyStreakStore.isStreakActive) {
+        const bonusTokens = Math.floor(dailyStreakStore.streakData.currentStreak / 5) * 10;
+        if (bonusTokens > 0) {
+          userProfileStore.addTokens(bonusTokens);
+          console.log(`Bônus de streak: +${bonusTokens} tokens!`);
+        }
+      }
     } else {
       // No more moves
       showTieModal.value = true;

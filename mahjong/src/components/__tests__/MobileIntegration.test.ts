@@ -3,8 +3,6 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import MobileGameBoard from '../MobileGameBoard.vue';
 import MobileControls from '../MobileControls.vue';
-// import { useGameStore } from '../../stores/game.store';
-// import { MjTile } from '../../models/tile.model';
 
 // Mock do navigator
 (global as any).navigator = {
@@ -74,7 +72,7 @@ describe('Mobile UI Integration', () => {
       ];
       
       const wrapper = mount(MobileGameBoard, {
-        props: { tiles }
+        props: { tiles: tiles as any }
       });
       
       const tile = wrapper.find('.tile');
@@ -91,7 +89,7 @@ describe('Mobile UI Integration', () => {
       ];
       
       const wrapper = mount(MobileGameBoard, {
-        props: { tiles }
+        props: { tiles: tiles as any }
       });
       
       const tile = wrapper.find('.tile');
@@ -103,7 +101,7 @@ describe('Mobile UI Integration', () => {
 
   describe('Layout Responsivo', () => {
     it('deve ajustar escala em telas pequenas', async () => {
-      const tiles: Tile[] = Array.from({ length: 20 }, (_, i) => ({
+      const tiles = Array.from({ length: 20 }, (_, i) => ({
         id: i + 1,
         type: 'bamboo',
         value: (i % 4) + 1,
@@ -116,7 +114,7 @@ describe('Mobile UI Integration', () => {
       }));
       
       const wrapper = mount(MobileGameBoard, {
-        props: { tiles }
+        props: { tiles: tiles as any }
       });
       
       await wrapper.vm.$nextTick();
@@ -136,7 +134,7 @@ describe('Mobile UI Integration', () => {
       ];
       
       const wrapper = mount(MobileGameBoard, {
-        props: { tiles }
+        props: { tiles: tiles as any }
       });
       
       const info = wrapper.find('.tiles-info');
@@ -253,7 +251,7 @@ describe('Mobile UI Integration', () => {
       ];
       
       const wrapper = mount(MobileGameBoard, {
-        props: { tiles }
+        props: { tiles: tiles as any }
       });
       
       const tile = wrapper.find('.tile');

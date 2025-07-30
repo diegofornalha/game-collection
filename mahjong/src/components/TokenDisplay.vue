@@ -1,6 +1,6 @@
 <template>
-  <div :class="displayClasses">
-    <div class="token-icon">
+  <div ref="tokenDisplayRef" :class="displayClasses">
+    <div class="token-icon" ref="tokenIconRef">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/>
         <circle cx="12" cy="12" r="8" fill="currentColor"/>
@@ -22,36 +22,66 @@
         {{ changeAmount > 0 ? '+' : '' }}{{ formatNumber(changeAmount) }}
       </div>
     </Transition>
+    
+    <!-- Overlay de animação de partículas -->
+    <TokenAnimationOverlay
+      v-if="showParticleAnimation"
+      :active="animationActive"
+      :source-element="animationSource"
+      :target-element="tokenIconRef"
+      :particle-count="particleCount"
+      :duration="animationDuration"
+      @animation-complete="onAnimationComplete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import AnimatedNumber from './common/AnimatedNumber.vue'
+import TokenAnimationOverlay from './animations/TokenAnimationOverlay.vue'
 
 interface Props {
   tokens: number
   showAnimation?: boolean
   compact?: boolean
   showChange?: boolean
+  showParticleAnimation?: boolean
+  animationSource?: HTMLElement | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   tokens: 0,
   showAnimation: true,
   compact: false,
-  showChange: true
+  showChange: true,
+  showParticleAnimation: true,
+  animationSource: null
 })
+
+const emit = defineEmits<{
+  'tokens-changed': [oldValue: number, newValue: number]
+}>()
+
+// Refs para elementos DOM
+const tokenDisplayRef = ref<HTMLDivElement>()
+const tokenIconRef = ref<HTMLDivElement>()
 
 const previousTokens = ref(props.tokens)
 const changeAmount = ref(0)
 const changeClass = ref('')
 
+// Estados da animação de partículas
+const animationActive = ref(false)
+const particleCount = ref(20)
+const animationDuration = ref(2000)
+
 const displayClasses = computed(() => [
   'token-display',
   {
     'compact': props.compact,
-    'animating': changeAmount.value !== 0
+    'animating': changeAmount.value !== 0 || animationActive.value,
+    'particle-animating': animationActive.value
   }
 ])
 
@@ -62,6 +92,17 @@ watch(() => props.tokens, (newValue, oldValue) => {
     if (diff !== 0) {
       changeAmount.value = diff
       changeClass.value = diff > 0 ? 'positive' : 'negative'
+      
+      // Emitir evento de mudança
+      emit('tokens-changed', oldValue, newValue)
+      
+      // Ativar animação de partículas se configurado e tokens aumentaram
+      if (props.showParticleAnimation && diff > 0) {
+        // Ajustar quantidade de partículas baseado no ganho
+        particleCount.value = Math.min(30, Math.max(10, diff))
+        animationDuration.value = diff >= 100 ? 2500 : 2000
+        animationActive.value = true
+      }
       
       // Limpar a animação após 2 segundos
       setTimeout(() => {
@@ -80,6 +121,11 @@ const formatNumber = (value: number): string => {
     return `${(value / 1000).toFixed(1)}K`
   }
   return value.toLocaleString('pt-BR')
+}
+
+// Callback quando animação de partículas termina
+function onAnimationComplete() {
+  animationActive.value = false
 }
 </script>
 
@@ -225,6 +271,26 @@ export default {
 
 .animating .token-amount {
   color: var(--yellow-600);
+}
+
+/* Estado de animação com partículas */
+.particle-animating .token-icon {
+  animation: pulse-glow 0.5s ease-out;
+}
+
+@keyframes pulse-glow {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px var(--yellow-400));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
 }
 
 /* Responsivo */

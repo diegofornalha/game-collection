@@ -53,18 +53,18 @@ export const useUserProfileStore = defineStore('userProfile', () => {
   })
 
   const unlockedAchievements = computed(() => {
-    return profile.value.achievements.filter(a => a.unlockedAt !== null)
+    return profile.value.achievements.filter(a => a.unlockedAt !== undefined)
   })
 
   // Métodos
   function initializeProfile(userId: string) {
-    const savedProfile = storageService.getItem<UserProfile>(`profile_${userId}`)
+    const savedProfile = storageService.getItem(`profile_${userId}`) as UserProfile | null
     
     if (savedProfile) {
       profile.value = {
         ...savedProfile,
         createdAt: new Date(savedProfile.createdAt),
-        lastLoginAt: new Date(savedProfile.lastLoginAt || savedProfile.lastUpdated)
+        lastLoginAt: new Date(savedProfile.lastLoginAt)
       }
     } else {
       profile.value.id = userId
@@ -119,9 +119,9 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     }
 
     // Recalcular tempo médio
-    if (statUpdates.totalPlayTime !== undefined && profile.value.stats.gamesPlayed > 0) {
-      profile.value.stats.averageTime = Math.floor(
-        profile.value.stats.totalPlayTime / profile.value.stats.gamesPlayed
+    if (statUpdates.totalTimePlayed !== undefined && profile.value.stats.gamesPlayed > 0) {
+      profile.value.stats.averageGameTime = Math.floor(
+        profile.value.stats.totalTimePlayed / profile.value.stats.gamesPlayed
       )
     }
 
@@ -137,7 +137,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
       
       // Recompensas por conquista
       if (achievement.rewards) {
-        if (achievement.rewards.xp) addXP(achievement.rewards.xp)
+        if (achievement.rewards.experience) addXP(achievement.rewards.experience)
         if (achievement.rewards.tokens) addTokens(achievement.rewards.tokens)
       }
       
@@ -172,7 +172,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
       profile.value.achievements.push({
         ...achievement,
         progress: 0,
-        unlockedAt: null
+        unlockedAt: undefined
       })
       saveProfile()
     }
@@ -182,25 +182,32 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     const id = profile.value.id
     profile.value = {
       id,
-      name: 'Jogador',
+      username: 'Jogador',
       avatar: 'default',
       level: 1,
-      currentXP: 0,
-      totalXP: 0,
+      experiencePoints: 0,
+      totalExperience: 0,
       tokens: 0,
       achievements: [],
       stats: {
         gamesPlayed: 0,
         gamesWon: 0,
-        bestTime: null,
-        bestScore: 0,
-        totalPlayTime: 0,
-        tilesMatched: 0,
-        perfectGames: 0,
-        averageTime: null
+        winRate: 0,
+        totalTimePlayed: 0,
+        averageGameTime: 0,
+        bestTime: undefined,
+        currentStreak: 0,
+        longestStreak: 0
+      },
+      preferences: {
+        theme: 'light',
+        soundEnabled: true,
+        animationSpeed: 'normal',
+        notifications: true,
+        language: 'pt-BR'
       },
       createdAt: new Date(),
-      lastUpdated: new Date()
+      lastLoginAt: new Date()
     }
     saveProfile()
   }

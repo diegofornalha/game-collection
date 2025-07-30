@@ -4,6 +4,8 @@ import { MjTile } from '@/models/tile.model';
 import { GameState, Move } from '@/types/game.types';
 import { preferencesService, UserPreferences } from '@/services/preferences.service';
 import { storageService } from '@/services/storage.service';
+import { useChallengesStore } from '@/stores/gamification/challenges.store';
+import type { GameContext } from '@/types/gamification.types';
 
 interface UndoItem {
   tile1: MjTile;
@@ -66,6 +68,13 @@ export const useGameStore = defineStore('game', () => {
   const history = ref<Move[]>([]);
   const hintsUsed = ref(0);
   const undoCount = ref(0);
+  const wrongMatches = ref(0);
+  const maxCombo = ref(0);
+  const currentCombo = ref(0);
+  const gameStartTime = ref(0);
+  
+  // Token animation trigger
+  const tokenAnimationTrigger = ref<{ source?: HTMLElement; amount: number } | null>(null);
   
   // Preferences
   const preferences = ref<UserPreferences>(preferencesService.getCurrentPreferences());
@@ -117,6 +126,12 @@ export const useGameStore = defineStore('game', () => {
     undoStack.value = [];
     redoStack.value = [];
     showHint.value = false;
+    hintsUsed.value = 0;
+    undoCount.value = 0;
+    wrongMatches.value = 0;
+    maxCombo.value = 0;
+    currentCombo.value = 0;
+    gameStartTime.value = Date.now();
     
     startTimer();
     
@@ -143,6 +158,8 @@ export const useGameStore = defineStore('game', () => {
         removeTiles(selectedTile.value, tile);
       } else {
         // No match
+        wrongMatches.value++;
+        currentCombo.value = 0; // Reset combo on wrong match
         selectedTile.value.unselect();
         tile.select();
         selectedTile.value = tile;
@@ -189,10 +206,30 @@ export const useGameStore = defineStore('game', () => {
     tile2.remove();
     selectedTile.value = null;
     
+    // Update combo counter
+    currentCombo.value++;
+    if (currentCombo.value > maxCombo.value) {
+      maxCombo.value = currentCombo.value;
+    }
+    
     // Update score
     const baseScore = 10;
     const timeBonus = Math.max(0, 10 - Math.floor(timer.value / 30));
-    score.value += baseScore + timeBonus;
+    const comboBonus = currentCombo.value > 1 ? (currentCombo.value - 1) * 5 : 0;
+    const totalScore = baseScore + timeBonus + comboBonus;
+    score.value += totalScore;
+    
+    // Trigger token animation if significant score
+    if (totalScore >= 15) {
+      tokenAnimationTrigger.value = {
+        source: undefined, // Will use the matched tiles position
+        amount: totalScore
+      };
+      // Clear trigger after a short delay
+      setTimeout(() => {
+        tokenAnimationTrigger.value = null;
+      }, 100);
+    }
     
     // Record move
     const move = {
@@ -214,6 +251,9 @@ export const useGameStore = defineStore('game', () => {
     };
     moves.value.push(move);
     history.value.push(move);
+    
+    // Update challenge progress
+    updateChallengeProgress();
     
     // Check for game completion
     checkGameComplete();
@@ -382,6 +422,12 @@ export const useGameStore = defineStore('game', () => {
       isGameComplete.value = true;
       stopTimer();
       saveGameState(true);
+      
+      // Completar desafios quando o jogo terminar
+      const challengesStore = useChallengesStore();
+      const gameContext = getGameContext();
+      challengesStore.updateProgress('complete-game', gameContext);
+      
       return;
     }
     
@@ -494,6 +540,41 @@ export const useGameStore = defineStore('game', () => {
     updatePreferences({ musicEnabled: !musicEnabled.value });
   }
   
+  function updateChallengeProgress() {
+    const challengesStore = useChallengesStore();
+    const context = getGameContext();
+    
+    // Update progress for match-based challenges
+    challengesStore.updateProgress('make-match', context);
+    
+    // Update combo challenges if applicable
+    if (maxCombo.value >= 5) {
+      challengesStore.updateProgress('combo-5', context);
+    }
+  }
+  
+  function getGameContext(): GameContext {
+    return {
+      score: score.value,
+      timeTaken: Date.now() - gameStartTime.value,
+      timeElapsed: timer.value * 1000,
+      hintsUsed: hintsUsed.value,
+      undoUsed: undoCount.value,
+      undoCount: undoCount.value,
+      wrongMatches: wrongMatches.value,
+      perfectGame: wrongMatches.value === 0,
+      matchCount: moves.value.length,
+      maxCombo: maxCombo.value,
+      gameWon: false,
+      gameCompleted: false,
+      movesCount: moves.value.length,
+      metadata: {
+        currentCombo: currentCombo.value,
+        layout: currentLayout.value
+      }
+    };
+  }
+  
   return {
     // State
     tiles,
@@ -513,6 +594,11 @@ export const useGameStore = defineStore('game', () => {
     history,
     hintsUsed,
     undoCount,
+    wrongMatches,
+    maxCombo,
+    currentCombo,
+    gameStartTime,
+    tokenAnimationTrigger,
     
     // Preferences
     soundEnabled,
@@ -537,6 +623,8 @@ export const useGameStore = defineStore('game', () => {
     toggleMusic,
     updatePreferences,
     saveGameState,
-    clearSavedGame
+    clearSavedGame,
+    updateChallengeProgress,
+    getGameContext
   };
 });

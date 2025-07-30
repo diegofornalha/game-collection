@@ -74,7 +74,7 @@ export interface StreakReward {
   achievement?: string;
   special?: string;
   xp?: number;
-  bonus?: number;
+  bonus?: string;
 }
 
 export interface Challenge {

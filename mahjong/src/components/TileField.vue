@@ -896,7 +896,7 @@ function shuffleRemainingTiles() {
     // First, ensure at least one matching pair among free tiles
     let guaranteedPairAdded = false;
     
-    typeGroups.forEach((types, key) => {
+    typeGroups.forEach((types) => {
       if (types.length >= 2 && !guaranteedPairAdded) {
         // We have at least 2 of this type, use them to guarantee a match
         usedTypes.push(types[0], types[1]);
@@ -929,7 +929,7 @@ function shuffleRemainingTiles() {
     });
     
     // Smart assignment: put matching types on free tiles
-    activeTiles.forEach((tile, index) => {
+    activeTiles.forEach((tile) => {
       if (typeIndex < shuffledTypes.length) {
         tile.type = shuffledTypes[typeIndex++];
       }

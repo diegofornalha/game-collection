@@ -23,9 +23,9 @@
           Jogue hoje para manter!
         </div>
         
-        <div v-else-if="nextReward && !vacationMode" class="next-reward">
+        <div v-else-if="daysUntilReward && !vacationMode" class="next-reward">
           <i class="fas fa-gift"></i>
-          {{ daysToNextReward }} {{ daysToNextReward === 1 ? 'dia' : 'dias' }} para próxima recompensa
+          {{ daysUntilReward }} {{ daysUntilReward === 1 ? 'dia' : 'dias' }} para próxima recompensa
         </div>
         
         <div v-else-if="vacationMode" class="vacation-info">
@@ -61,22 +61,23 @@ interface Props {
   lastLogin?: Date | string
   vacationMode?: boolean
   compact?: boolean
+  isActive?: boolean
+  vacationDaysLeft?: number
+  nextReward?: { day: number; xp?: number; experience?: number; tokens: number; achievement?: string; bonus?: string } | null
+  daysUntilReward?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   streak: 0,
   vacationMode: false,
-  compact: false
+  compact: false,
+  isActive: true,
+  vacationDaysLeft: 0,
+  nextReward: null,
+  daysUntilReward: null
 })
 
-// Lista de recompensas por dias de ofensiva
-const streakRewards = [
-  { day: 7, reward: '50 tokens' },
-  { day: 14, reward: '100 tokens' },
-  { day: 30, reward: '250 tokens + avatar especial' },
-  { day: 60, reward: '500 tokens + título' },
-  { day: 100, reward: '1000 tokens + moldura lendária' }
-]
+// Removido - usando recompensas da store
 
 const indicatorClasses = computed(() => [
   'daily-streak-indicator',
@@ -99,14 +100,7 @@ const isAtRisk = computed(() => {
   return hoursSinceLogin >= 23
 })
 
-const nextReward = computed(() => {
-  return streakRewards.find(r => r.day > props.streak)
-})
-
-const daysToNextReward = computed(() => {
-  if (!nextReward.value) return 0
-  return nextReward.value.day - props.streak
-})
+// Removido - não é usado
 </script>
 
 <script lang="ts">

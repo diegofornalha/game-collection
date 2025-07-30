@@ -8,12 +8,11 @@ import type {
 } from '@/types/gamification.types'
 import { storageService } from '@/services/storage.service'
 import { useUserProfileStore } from './userProfile.store'
-import { useGameStore } from '@/stores/game.store'
 
 export const useChallengesStore = defineStore('challenges', () => {
   // Stores relacionadas
   const userProfileStore = useUserProfileStore()
-  const gameStore = useGameStore()
+  // const gameStore = useGameStore() // Removido - não usado
 
   // Estado
   const challenges = ref<Challenge[]>([])
@@ -152,8 +151,7 @@ export const useChallengesStore = defineStore('challenges', () => {
       if (c.expiresAt && new Date(c.expiresAt) < now) return false
       
       const progress = challengeProgress.value.get(c.id)
-      if (!c.repeatable && progress?.completed) return false
-      if (c.maxCompletions && progress && progress.completions >= c.maxCompletions) return false
+      if (progress?.isCompleted) return false
       
       return true
     })
@@ -181,11 +179,11 @@ export const useChallengesStore = defineStore('challenges', () => {
     activeRules.value = [...DEFAULT_RULES]
     
     // Carregar desafios salvos
-    const savedChallenges = storageService.getItem<Challenge[]>(`challenges_${userId}`)
-    const savedProgress = storageService.getItem<[string, ChallengeProgress][]>(`challenge_progress_${userId}`)
+    const savedChallenges = storageService.getItem(`challenges_${userId}`) as Challenge[] | null
+    const savedProgress = storageService.getItem(`challenge_progress_${userId}`) as [string, ChallengeProgress][] | null
     
     if (savedChallenges) {
-      challenges.value = savedChallenges.map(c => ({
+      challenges.value = savedChallenges.map((c: any) => ({
         ...c,
         expiresAt: c.expiresAt ? new Date(c.expiresAt) : undefined
       }))
@@ -221,7 +219,7 @@ export const useChallengesStore = defineStore('challenges', () => {
     }
   }
 
-  function validateChallenge(challengeId: string, validation: ChallengeValidation): boolean {
+  function validateChallenge(challengeId: string, validation: GameContext): boolean {
     const challenge = challenges.value.find(c => c.id === challengeId)
     if (!challenge) return false
     
@@ -235,7 +233,7 @@ export const useChallengesStore = defineStore('challenges', () => {
     return true
   }
 
-  function completeChallenge(challengeId: string, validation: ChallengeValidation) {
+  function completeChallenge(challengeId: string, validation: GameContext) {
     const challenge = challenges.value.find(c => c.id === challengeId)
     if (!challenge) return null
     
@@ -249,36 +247,22 @@ export const useChallengesStore = defineStore('challenges', () => {
     if (!progress) {
       progress = {
         challengeId,
-        completed: false,
-        completions: 0,
-        bestTime: null,
-        bestScore: 0,
-        firstCompletedAt: null,
-        lastCompletedAt: null
+        currentValue: 0,
+        targetValue: challenge.target,
+        isCompleted: false,
+        lastUpdated: new Date()
       }
     }
     
-    progress.completions++
-    progress.completed = true
-    progress.lastCompletedAt = new Date()
-    
-    if (!progress.firstCompletedAt) {
-      progress.firstCompletedAt = new Date()
-    }
-    
-    if (validation.timeTaken && (!progress.bestTime || validation.timeTaken < progress.bestTime)) {
-      progress.bestTime = validation.timeTaken
-    }
-    
-    if (validation.score && validation.score > progress.bestScore) {
-      progress.bestScore = validation.score
-    }
+    progress.currentValue = challenge.target
+    progress.isCompleted = true
+    progress.lastUpdated = new Date()
     
     challengeProgress.value.set(challengeId, progress)
     
     // Aplicar recompensas
-    let totalXP = challenge.rewards.xp || 0
-    let totalTokens = challenge.rewards.tokens || 0
+    let totalXP = challenge.reward.experience || 0
+    let totalTokens = challenge.reward.tokens || 0
     
     // Aplicar multiplicadores das regras
     for (const rule of challenge.rules) {
@@ -291,10 +275,10 @@ export const useChallengesStore = defineStore('challenges', () => {
     userProfileStore.addXP(totalXP)
     userProfileStore.addTokens(totalTokens)
     
-    // Adicionar badge se houver
-    if (challenge.rewards.badge) {
-      // Implementar sistema de badges no userProfile
-      console.log(`Badge desbloqueado: ${challenge.rewards.badge}`)
+    // Adicionar achievement se houver
+    if (challenge.reward.achievement) {
+      // Implementar sistema de achievements no userProfile
+      console.log(`Achievement desbloqueado: ${challenge.reward.achievement}`)
     }
     
     saveChallenges()
@@ -304,7 +288,7 @@ export const useChallengesStore = defineStore('challenges', () => {
       rewards: {
         xp: totalXP,
         tokens: totalTokens,
-        badge: challenge.rewards.badge
+        achievement: challenge.reward.achievement
       }
     }
   }
@@ -319,33 +303,35 @@ export const useChallengesStore = defineStore('challenges', () => {
       if (!progress) {
         progress = {
           challengeId,
-          completed: false,
-          completions: 0,
-          bestTime: null,
-          bestScore: 0,
-          firstCompletedAt: null,
-          lastCompletedAt: null,
-          partialProgress: 0
+          currentValue: 0,
+          targetValue: challenge.target,
+          isCompleted: false,
+          lastUpdated: new Date()
         }
       }
       
       // Incrementar progresso parcial
       if (partialValidation.gameCompleted) {
-        progress.partialProgress = (progress.partialProgress || 0) + 1
+        progress.currentValue = Math.min((progress.currentValue || 0) + 1, challenge.target)
         
         // Verificar se atingiu o requisito
-        if (progress.partialProgress >= challenge.target) {
+        if (progress.currentValue >= challenge.target) {
           // Completar o desafio
           const fullValidation: GameContext = {
+            gameWon: true,
             gameCompleted: true,
+            movesCount: partialValidation.movesCount || 0,
+            timeElapsed: partialValidation.timeElapsed || 0,
             timeTaken: partialValidation.timeTaken || 0,
-            score: partialValidation.score || 0,
-            undoCount: partialValidation.undoCount || 0,
             hintsUsed: partialValidation.hintsUsed || 0,
+            undoUsed: partialValidation.undoUsed || 0,
+            undoCount: partialValidation.undoCount || 0,
+            score: partialValidation.score || 0,
+            perfectGame: partialValidation.perfectGame || false,
             wrongMatches: partialValidation.wrongMatches || 0,
             matchCount: partialValidation.matchCount || 0,
             maxCombo: partialValidation.maxCombo || 0,
-            metadata: {}
+            metadata: partialValidation.metadata || {}
           }
           
           completeChallenge(challengeId, fullValidation)
@@ -479,10 +465,7 @@ export const useChallengesStore = defineStore('challenges', () => {
     )
   }
 
-  // Gerar desafios diários
-  function generateDailyChallenges() {
-    refreshChallenges()
-  }
+  // Gerar desafios diários - removido (já existe acima)
 
   return {
     // Estado
@@ -504,8 +487,9 @@ export const useChallengesStore = defineStore('challenges', () => {
     validateChallenge,
     completeChallenge,
     updateChallengeProgress,
+    updateProgress: updateChallengeProgress, // Alias para compatibilidade
     refreshChallenges,
     addCustomRule,
-    generateDailyChallenges
+    generateDailyChallenges: refreshChallenges
   }
 })

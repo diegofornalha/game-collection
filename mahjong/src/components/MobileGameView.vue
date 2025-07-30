@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 import GameView from './GameView.vue';
 import UserProfileHeader from './UserProfileHeader.vue';
@@ -83,11 +83,7 @@ import UserProfileHeader from './UserProfileHeader.vue';
 const gameStore = useGameStore();
 const showMenu = ref(false);
 
-const formattedTime = computed(() => {
-  const minutes = Math.floor(gameStore.timer / 60);
-  const seconds = gameStore.timer % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-});
+// Removido - não usado
 
 const toggleMenu = () => {
   showMenu.value = !showMenu.value;

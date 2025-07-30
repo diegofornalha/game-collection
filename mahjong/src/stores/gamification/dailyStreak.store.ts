@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DailyStreakData, VacationMode, StreakReward } from '@/types/gamification.types'
+import type { DailyStreakData, StreakReward } from '@/types/gamification.types'
 import { storageService } from '@/services/storage.service'
 import { useUserProfileStore } from './userProfile.store'
 
@@ -12,37 +12,34 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
   const streakData = ref<DailyStreakData>({
     currentStreak: 0,
     longestStreak: 0,
-    lastVisit: null,
-    streakStartDate: null,
-    totalDaysPlayed: 0,
-    vacationMode: null,
-    missedDays: 0,
-    comebackBonus: false
+    lastLoginDate: new Date().toISOString(),
+    isVacationMode: false,
+    rewardsEarned: []
   })
 
   // Configurações de recompensas
   const STREAK_REWARDS: StreakReward[] = [
-    { day: 3, xp: 50, tokens: 5, bonus: 'Iniciante Dedicado' },
-    { day: 7, xp: 150, tokens: 15, bonus: 'Semana Completa' },
-    { day: 14, xp: 300, tokens: 30, bonus: 'Duas Semanas' },
-    { day: 30, xp: 750, tokens: 75, bonus: 'Mês Inteiro' },
-    { day: 60, xp: 1500, tokens: 150, bonus: 'Dois Meses' },
-    { day: 90, xp: 2500, tokens: 250, bonus: 'Trimestre' },
-    { day: 180, xp: 5000, tokens: 500, bonus: 'Semestre' },
-    { day: 365, xp: 10000, tokens: 1000, bonus: 'Ano Completo' }
+    { day: 3, experience: 50, tokens: 5, achievement: 'Iniciante Dedicado' },
+    { day: 7, experience: 150, tokens: 15, achievement: 'Semana Completa' },
+    { day: 14, experience: 300, tokens: 30, achievement: 'Duas Semanas' },
+    { day: 30, experience: 750, tokens: 75, achievement: 'Mês Inteiro' },
+    { day: 60, experience: 1500, tokens: 150, achievement: 'Dois Meses' },
+    { day: 90, experience: 2500, tokens: 250, achievement: 'Trimestre' },
+    { day: 180, experience: 5000, tokens: 500, achievement: 'Semestre' },
+    { day: 365, experience: 10000, tokens: 1000, achievement: 'Ano Completo' }
   ]
 
   // Computed
   const isStreakActive = computed(() => {
-    if (!streakData.value.lastVisit) return false
+    if (!streakData.value.lastLoginDate) return false
     
-    const lastVisit = new Date(streakData.value.lastVisit)
+    const lastVisit = new Date(streakData.value.lastLoginDate)
     const today = new Date()
     const daysDiff = getDaysDifference(lastVisit, today)
     
     // Em modo férias
-    if (streakData.value.vacationMode?.active) {
-      const endDate = new Date(streakData.value.vacationMode.endDate)
+    if (streakData.value.isVacationMode && streakData.value.vacationEndDate) {
+      const endDate = new Date(streakData.value.vacationEndDate)
       return today <= endDate
     }
     
@@ -66,10 +63,10 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
   })
 
   const vacationDaysLeft = computed(() => {
-    if (!streakData.value.vacationMode?.active) return 0
+    if (!streakData.value.isVacationMode || !streakData.value.vacationEndDate) return 0
     
     const today = new Date()
-    const endDate = new Date(streakData.value.vacationMode.endDate)
+    const endDate = new Date(streakData.value.vacationEndDate)
     
     if (today > endDate) return 0
     
@@ -78,19 +75,10 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
 
   // Métodos
   function initializeStreak(userId: string) {
-    const savedData = storageService.getItem<DailyStreakData>(`streak_${userId}`)
+    const savedData = storageService.getItem(`streak_${userId}`) as DailyStreakData | null
     
     if (savedData) {
-      streakData.value = {
-        ...savedData,
-        lastVisit: savedData.lastVisit ? new Date(savedData.lastVisit) : null,
-        streakStartDate: savedData.streakStartDate ? new Date(savedData.streakStartDate) : null,
-        vacationMode: savedData.vacationMode ? {
-          ...savedData.vacationMode,
-          startDate: new Date(savedData.vacationMode.startDate),
-          endDate: new Date(savedData.vacationMode.endDate)
-        } : null
-      }
+      streakData.value = savedData
     }
     
     checkAndUpdateStreak()
@@ -100,13 +88,13 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    if (!streakData.value.lastVisit) {
+    if (!streakData.value.lastLoginDate) {
       // Primeira visita
       startNewStreak()
       return
     }
     
-    const lastVisit = new Date(streakData.value.lastVisit)
+    const lastVisit = new Date(streakData.value.lastLoginDate)
     lastVisit.setHours(0, 0, 0, 0)
     
     const daysDiff = getDaysDifference(lastVisit, today)
@@ -115,8 +103,8 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     if (daysDiff === 0) return
     
     // Modo férias ativo
-    if (streakData.value.vacationMode?.active) {
-      const endDate = new Date(streakData.value.vacationMode.endDate)
+    if (streakData.value.isVacationMode && streakData.value.vacationEndDate) {
+      const endDate = new Date(streakData.value.vacationEndDate)
       
       if (today <= endDate) {
         // Ainda em férias, mantém a ofensiva
@@ -151,12 +139,9 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     streakData.value = {
       currentStreak: 1,
       longestStreak: Math.max(1, streakData.value.longestStreak),
-      lastVisit: today,
-      streakStartDate: today,
-      totalDaysPlayed: streakData.value.totalDaysPlayed + 1,
-      vacationMode: null,
-      missedDays: 0,
-      comebackBonus: false
+      lastLoginDate: today.toISOString(),
+      isVacationMode: false,
+      rewardsEarned: streakData.value.rewardsEarned || []
     }
     
     saveStreak()
@@ -166,8 +151,7 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     const today = new Date()
     
     streakData.value.currentStreak++
-    streakData.value.lastVisit = today
-    streakData.value.totalDaysPlayed++
+    streakData.value.lastLoginDate = today.toISOString()
     
     if (streakData.value.currentStreak > streakData.value.longestStreak) {
       streakData.value.longestStreak = streakData.value.currentStreak
@@ -182,19 +166,14 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     saveStreak()
   }
 
-  function handleStreakBreak(daysMissed: number) {
+  function handleStreakBreak(_daysMissed: number) {
     const previousStreak = streakData.value.currentStreak
-    
-    // Salvar dados antes de resetar
-    streakData.value.missedDays = daysMissed - 1
     
     // Resetar ofensiva
     startNewStreak()
     
     // Bonus de retorno para ofensivas longas
     if (previousStreak >= 7) {
-      streakData.value.comebackBonus = true
-      
       // Pequena recompensa por voltar
       userProfileStore.addXP(25)
       userProfileStore.addTokens(5)
@@ -204,44 +183,44 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
   function activateVacationMode(days: number): boolean {
     // Verificações
     if (days < 1 || days > 14) return false
-    if (streakData.value.vacationMode?.active) return false
+    if (streakData.value.isVacationMode) return false
     if (streakData.value.currentStreak < 7) return false // Precisa ter pelo menos 7 dias
     
     const today = new Date()
     const endDate = new Date()
     endDate.setDate(endDate.getDate() + days - 1)
     
-    streakData.value.vacationMode = {
-      active: true,
-      startDate: today,
-      endDate: endDate,
-      daysUsed: days
-    }
+    streakData.value.isVacationMode = true
+    streakData.value.vacationStartDate = today.toISOString()
+    streakData.value.vacationEndDate = endDate.toISOString()
     
     saveStreak()
     return true
   }
 
   function deactivateVacationMode() {
-    if (streakData.value.vacationMode) {
-      streakData.value.vacationMode.active = false
+    if (streakData.value.isVacationMode) {
+      streakData.value.isVacationMode = false
       saveStreak()
     }
   }
 
   function applyStreakReward(reward: StreakReward) {
-    userProfileStore.addXP(reward.xp)
+    userProfileStore.addXP(reward.experience)
     userProfileStore.addTokens(reward.tokens)
     
+    // Adicionar à lista de recompensas ganhas
+    streakData.value.rewardsEarned.push(reward)
+    
     // Pode adicionar conquistas especiais aqui
-    if (reward.bonus) {
+    if (reward.achievement) {
       // Notificar sobre o bônus especial
-      console.log(`Bônus desbloqueado: ${reward.bonus}`)
+      console.log(`Conquista desbloqueada: ${reward.achievement}`)
     }
   }
 
   function updateVisit() {
-    streakData.value.lastVisit = new Date()
+    streakData.value.lastLoginDate = new Date().toISOString()
     saveStreak()
   }
 
@@ -260,12 +239,9 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     streakData.value = {
       currentStreak: 0,
       longestStreak: streakData.value.longestStreak, // Mantém o recorde
-      lastVisit: null,
-      streakStartDate: null,
-      totalDaysPlayed: streakData.value.totalDaysPlayed, // Mantém total
-      vacationMode: null,
-      missedDays: 0,
-      comebackBonus: false
+      lastLoginDate: new Date().toISOString(),
+      isVacationMode: false,
+      rewardsEarned: streakData.value.rewardsEarned || []
     }
     saveStreak()
   }
