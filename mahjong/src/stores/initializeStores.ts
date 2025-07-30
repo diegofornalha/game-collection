@@ -13,11 +13,6 @@ export function initializeGamificationStores() {
 
   // Initialize user profile with default data
   if (!userProfile.username || userProfile.username === 'Guest') {
-    userProfile.updateProfile({
-      username: 'Jogador',
-      avatar: '/avatars/default.png'
-    });
-    
     // Adicionar alguns dados de demonstração para primeira vez
     userProfile.addXP(250); // Começar com alguma experiência
     userProfile.addTokens(100); // Tokens iniciais

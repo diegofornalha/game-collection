@@ -1,29 +1,18 @@
 <template>
   <header :class="computedClasses">
     <div class="user-section">
-      <UserAvatar
-        :avatar-url="userStore.profile.avatar"
-        :username="userStore.username"
-        size="medium"
-        :show-level="true"
-        :show-online="true"
-      />
-      
-      <div class="user-info">
-        <div class="user-name">{{ userStore.username || 'Jogador' }}</div>
-        <div class="user-stats">
-          <UserLevelDisplay
-            :level="userStore.level"
-            :experience="userStore.experiencePoints"
-            :nextLevelExp="userStore.nextLevelExperience"
-            compact
-          />
-          <TokenDisplay
-            :tokens="userStore.tokens"
-            :show-animation="true"
-            compact
-          />
-        </div>
+      <div class="user-stats">
+        <UserLevelDisplay
+          :level="userStore.level"
+          :experience="userStore.experiencePoints"
+          :nextLevelExp="userStore.nextLevelExperience"
+          compact
+        />
+        <TokenDisplay
+          :tokens="userStore.tokens"
+          :show-animation="true"
+          compact
+        />
       </div>
     </div>
 
@@ -99,7 +88,6 @@ import { computed, ref } from 'vue'
 import { useUserProfileStore } from '../stores/gamification/userProfile.store'
 import { useGameStore } from '../stores/game.store'
 import { useDailyStreakStore } from '../stores/gamification/dailyStreak.store'
-import UserAvatar from './common/UserAvatar.vue'
 import UserLevelDisplay from './common/UserLevelDisplay.vue'
 import TokenDisplay from './TokenDisplay.vue'
 import DailyStreakIndicator from './DailyStreakIndicator.vue'
@@ -178,22 +166,10 @@ export default {
   flex: 1;
 }
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 1rem;
-}
-
 .user-stats {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .action-section {
