@@ -48,6 +48,7 @@ export const useGameStore = defineStore('game', () => {
   const timer = ref(0);
   const isPaused = ref(false);
   const isGameComplete = ref(false);
+  const isPlaying = computed(() => !isPaused.value && !isGameComplete.value && tiles.value.length > 0);
   const currentLayout = ref('');
   const moves = ref<Move[]>([]);
   
@@ -60,6 +61,11 @@ export const useGameStore = defineStore('game', () => {
   const permanentHint = ref(false);
   const canUndo = computed(() => undoStack.value.length > 0);
   const canRedo = computed(() => redoStack.value.length > 0);
+  
+  // Additional game stats
+  const history = ref<Move[]>([]);
+  const hintsUsed = ref(0);
+  const undoCount = ref(0);
   
   // Preferences
   const preferences = ref<UserPreferences>(preferencesService.getCurrentPreferences());
@@ -189,7 +195,7 @@ export const useGameStore = defineStore('game', () => {
     score.value += baseScore + timeBonus;
     
     // Record move
-    moves.value.push({
+    const move = {
       tile1: {
         x: tile1.x,
         y: tile1.y,
@@ -205,7 +211,9 @@ export const useGameStore = defineStore('game', () => {
         typeIndex: tile2.type!.index
       },
       timestamp: Date.now()
-    });
+    };
+    moves.value.push(move);
+    history.value.push(move);
     
     // Check for game completion
     checkGameComplete();
@@ -251,6 +259,9 @@ export const useGameStore = defineStore('game', () => {
     
     // Save to redo stack
     redoStack.value.push(lastAction);
+    
+    // Increment undo count
+    undoCount.value++;
     
     // Save current game state
     saveCurrentGame();
@@ -330,6 +341,7 @@ export const useGameStore = defineStore('game', () => {
     if (matchingPairs.length > 0) {
       // Only set showHint to true if we found matches
       showHint.value = true;
+      hintsUsed.value++;
       
       // Highlight all tiles that are part of matching pairs
       highlightedTiles.forEach(tile => {
@@ -490,6 +502,7 @@ export const useGameStore = defineStore('game', () => {
     timer,
     isPaused,
     isGameComplete,
+    isPlaying,
     currentLayout,
     moves,
     showHint,
@@ -497,6 +510,9 @@ export const useGameStore = defineStore('game', () => {
     canUndo,
     canRedo,
     undoStack,
+    history,
+    hintsUsed,
+    undoCount,
     
     // Preferences
     soundEnabled,

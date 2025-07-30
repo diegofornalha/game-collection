@@ -71,7 +71,7 @@ const visibleActions = computed(() => {
   width: 60%;
   max-width: 550px;
   min-height: 200px;
-  color: $text-color;
+  color: #ffffff;
   border-radius: 15px;
   border: 3px solid #FFD700;
   text-align: center;
@@ -213,3 +213,9 @@ const visibleActions = computed(() => {
   }
 }
 </style>
+
+<script lang="ts">
+export default {
+  name: 'AppModal'
+}
+</script>

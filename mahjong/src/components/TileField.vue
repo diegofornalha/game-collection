@@ -9,7 +9,7 @@
     }"
   >
     <GameDialog 
-      v-if="paused" 
+      v-if="paused && !isMobile" 
       sub-text="Game Paused"
       button-text="Continue"
       @action="continueGame"
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick, computed, inject } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 import { MjTile, MjTileType } from '@/models/tile.model';
 import { turtleLayout, mobileTurtleLayout, type TilePosition } from '@/data/layouts';
@@ -142,6 +142,9 @@ const emit = defineEmits<{
 }>();
 
 const gameStore = useGameStore();
+
+// Mobile detection
+const isMobile = inject('isMobile', ref(false));
 
 // Component state
 const tiles = ref<MjTile[]>([]);
@@ -1449,3 +1452,9 @@ defineExpose({
   }
 }
 </style>
+
+<script lang="ts">
+export default {
+  name: 'TileField'
+}
+</script>

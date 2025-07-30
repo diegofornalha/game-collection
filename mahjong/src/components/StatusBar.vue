@@ -32,14 +32,7 @@
 
       <!-- middle block -->
       <div class="middle-block">
-        <span class="score highlight">
-          Pontos:&nbsp;{{ score > 0 ? score : 0 }}
-        </span>
-
-        <span class="timer">
-          <i class="fa fa-clock-o" aria-hidden="true"></i> 
-          <span class="highlight">{{ formattedTime }}</span>
-        </span>
+        <!-- Score and timer moved to UserProfileHeader to avoid duplication -->
       </div>
 
       <!-- right side block -->
@@ -191,7 +184,7 @@ onUnmounted(() => {
 .status {
   width: 100%;
   background: rgba(0, 0, 0, 0.8);
-  color: $text-color;
+  color: var(--text-primary, #ffffff);
   font-size: 16px;
   
   .status-bar {
@@ -200,7 +193,7 @@ onUnmounted(() => {
     align-items: center;
     padding: 4px 20px;
     
-    @media (max-width: $breakpoint-mobile) {
+    @media (max-width: $tablet) {
       flex-wrap: wrap;
       gap: 10px;
     }
@@ -215,7 +208,7 @@ onUnmounted(() => {
   }
   
   .middle-block {
-    @media (max-width: $breakpoint-mobile) {
+    @media (max-width: $tablet) {
       order: -1;
       width: 100%;
       justify-content: center;
@@ -227,7 +220,7 @@ onUnmounted(() => {
     transition: all 0.2s ease;
     
     &:hover:not(.disabled) {
-      color: $primary-color;
+      color: $primary;
       transform: scale(1.1);
     }
     
@@ -243,8 +236,8 @@ onUnmounted(() => {
     border-radius: 4px;
     
     &.active {
-      border-color: $secondary-color;
-      color: $secondary-color;
+      border-color: $secondary;
+      color: $secondary;
       text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
       background: rgba(255, 215, 0, 0.1);
       
@@ -274,7 +267,7 @@ onUnmounted(() => {
   }
   
   .highlight {
-    color: $text-color;
+    color: var(--text-primary, #ffffff);
     font-weight: bold;
   }
   
@@ -306,3 +299,9 @@ onUnmounted(() => {
   -ms-user-select: none;
 }
 </style>
+
+<script lang="ts">
+export default {
+  name: 'StatusBar'
+}
+</script>

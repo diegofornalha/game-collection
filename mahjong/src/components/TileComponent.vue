@@ -494,3 +494,9 @@ function onClick(event: MouseEvent) {
   }
 }
 </style>
+
+<script lang="ts">
+export default {
+  name: 'TileComponent'
+}
+</script>

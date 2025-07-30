@@ -1,0 +1,333 @@
+// Mobile UI Styles
+// Otimizações específicas para dispositivos móveis
+
+// Variáveis mobile
+:root {
+  // Safe areas
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  
+  // Tamanhos base
+  --mobile-tile-size: 40px;
+  --mobile-tile-height: 52px;
+  --mobile-button-size: 44px;
+  --mobile-spacing: 8px;
+  
+  // Cores mobile
+  --mobile-primary: #3498db;
+  --mobile-secondary: #2c3e50;
+  --mobile-success: #27ae60;
+  --mobile-warning: #f39c12;
+  --mobile-danger: #e74c3c;
+}
+
+// Reset mobile
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+// Prevenir zoom indesejado
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+// Body mobile
+body {
+  @media (max-width: 768px) {
+    overflow-x: hidden;
+    touch-action: manipulation;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+// Container principal mobile
+.mobile-app {
+  width: 100vw;
+  height: 100vh;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  position: relative;
+  
+  // Considerar safe areas
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+// Utilitários de touch
+.touch-target {
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    z-index: 0;
+  }
+}
+
+// Estados de toque
+.touch-active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+// Animações otimizadas para mobile
+@media (max-width: 768px) {
+  // Reduzir duração de animações
+  * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.2s !important;
+  }
+  
+  // Desabilitar animações complexas
+  .tile-match {
+    animation: simple-fade 0.3s ease-out !important;
+  }
+}
+
+@keyframes simple-fade {
+  to { opacity: 0; transform: scale(0.8); }
+}
+
+// Layout responsivo
+.game-container {
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+// Header mobile
+.mobile-header {
+  @media (max-width: 768px) {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--mobile-secondary);
+    color: white;
+    padding: var(--mobile-spacing);
+    padding-top: calc(var(--safe-area-top) + var(--mobile-spacing));
+  }
+}
+
+// Área de jogo mobile
+.game-board {
+  @media (max-width: 768px) {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    
+    // Centralizar conteúdo
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// Controles mobile
+.mobile-controls {
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: var(--mobile-spacing);
+    padding-bottom: calc(var(--safe-area-bottom) + var(--mobile-spacing));
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 90;
+  }
+}
+
+// Botões mobile
+.mobile-button {
+  min-width: var(--mobile-button-size);
+  min-height: var(--mobile-button-size);
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--mobile-primary);
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Tiles mobile
+.mobile-tile {
+  @media (max-width: 768px) {
+    width: var(--mobile-tile-size);
+    height: var(--mobile-tile-height);
+    font-size: 14px;
+    border-radius: 4px;
+    border-width: 1px;
+    
+    // Sombra simplificada
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    
+    &.selected {
+      box-shadow: 0 0 0 2px var(--mobile-primary);
+    }
+  }
+}
+
+// Modal mobile
+.mobile-modal {
+  @media (max-width: 768px) {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+// Orientação landscape
+@media (orientation: landscape) and (max-width: 768px) {
+  .mobile-header {
+    padding: 4px var(--mobile-spacing);
+    font-size: 14px;
+  }
+  
+  .mobile-controls {
+    padding: 4px var(--mobile-spacing);
+    
+    .mobile-button {
+      min-height: 36px;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+  }
+  
+  .game-board {
+    padding: 10px;
+  }
+}
+
+// Breakpoints específicos
+@media (max-width: 320px) {
+  :root {
+    --mobile-tile-size: 36px;
+    --mobile-tile-height: 46px;
+    --mobile-button-size: 40px;
+    --mobile-spacing: 6px;
+  }
+  
+  .mobile-button {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+}
+
+// iPhone X e posteriores
+@supports (padding: max(0px)) {
+  .mobile-header {
+    padding-top: max(var(--mobile-spacing), var(--safe-area-top));
+  }
+  
+  .mobile-controls {
+    padding-bottom: max(var(--mobile-spacing), var(--safe-area-bottom));
+  }
+}
+
+// Modo escuro
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mobile-primary: #3498db;
+    --mobile-secondary: #1a1a1a;
+    --mobile-success: #2ecc71;
+    --mobile-warning: #f1c40f;
+    --mobile-danger: #e74c3c;
+  }
+  
+  .mobile-app {
+    background: #121212;
+    color: #e0e0e0;
+  }
+  
+  .mobile-controls {
+    background: rgba(30, 30, 30, 0.95);
+  }
+  
+  .mobile-modal .modal-content {
+    background: #1e1e1e;
+    color: #e0e0e0;
+  }
+}
+
+// Performance
+@media (max-width: 768px) {
+  // Forçar aceleração de hardware
+  .tile,
+  .mobile-tile {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  // Reduzir complexidade visual
+  .tile-shadow,
+  .complex-gradient {
+    display: none;
+  }
+}
+
+// Acessibilidade mobile
+@media (max-width: 768px) {
+  // Aumentar contraste
+  .mobile-button {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  
+  // Focus visível
+  *:focus {
+    outline: 2px solid var(--mobile-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Estados de alta visibilidade
+.high-contrast {
+  --mobile-primary: #0066cc;
+  --mobile-secondary: #000000;
+  
+  .mobile-button {
+    border: 2px solid currentColor;
+  }
+}

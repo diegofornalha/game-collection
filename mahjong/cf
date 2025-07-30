@@ -1,0 +1,5 @@
+#!/bin/bash
+# Claude Flow shortcut with Deno enabled
+
+export PATH="/Users/agents/.deno/bin:$PATH"
+npx claude-flow@alpha "$@"

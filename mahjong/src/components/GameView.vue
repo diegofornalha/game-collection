@@ -41,6 +41,14 @@
     </AppModal>
 
     <div class="game-component">
+      <div v-if="!isInMobileView" class="header-section">
+        <UserProfileHeader 
+          :variant="'compact'"
+          :show-settings="true"
+          :show-game-stats="true"
+        />
+      </div>
+
       <div class="statusfield">
         <StatusBar
           @undo="onUndo"
@@ -57,11 +65,11 @@
         <TileField
           ref="tileFieldRef"
           :layout="currentLayout"
+          :paused="gameStore.isPaused"
           @ready="onTileCollectionReady"
           @tile-cleared="onTileCleared"
           @click="onClick"
           @continue="onContinueGame"
-          :paused="gameStore.isPaused"
         />
       </div>
     </div>
@@ -74,6 +82,7 @@ import { useGameStore } from '@/stores/game.store';
 import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
+import UserProfileHeader from './UserProfileHeader.vue';
 import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';
 
@@ -81,6 +90,9 @@ const gameStore = useGameStore();
 
 // Component refs
 const tileFieldRef = ref<InstanceType<typeof TileField> | null>(null);
+
+// Check if running inside MobileGameView
+const isInMobileView = ref(false);
 
 // Modal states
 const showMainMenu = ref(true);
@@ -223,9 +235,9 @@ async function loadSavedGame() {
   }
 }
 
-function replayGame() {
-  // TODO: Replay with same layout
-}
+// function replayGame() {
+//   // TODO: Replay with same layout
+// }
 
 function restartCurrentGame() {
   // Emit event to TileField to regenerate with same layout
@@ -312,6 +324,14 @@ function handleKeyPress(event: KeyboardEvent) {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyPress);
   
+  // Check if we're in mobile view
+  const checkMobile = () => {
+    isInMobileView.value = window.matchMedia('(max-width: 768px)').matches;
+  };
+  
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+  
   // Check for saved game
   try {
     const savedGame = await storageService.get('currentGame', 1);
@@ -336,6 +356,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyPress);
+  window.removeEventListener('resize', () => {});
 });
 </script>
 
@@ -356,6 +377,13 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.header-section {
+  flex: 0 0 auto;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .statusfield {
@@ -468,3 +496,9 @@ onUnmounted(() => {
   }
 }
 </style>
+
+<script lang="ts">
+export default {
+  name: 'GameView'
+}
+</script>

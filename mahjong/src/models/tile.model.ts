@@ -50,6 +50,7 @@ export class MjTileType {
 }
 
 export class MjTile {
+  public id: number = 0;
   public top: number;
   public left: number;
   public type: MjTileType | null = null;
@@ -58,9 +59,12 @@ export class MjTile {
   public z: number;
   public sortingOrder: number;
   public selected: boolean = false;
+  public isSelected: boolean = false; // Alias for compatibility
   public active: boolean = true;
   public showHint: boolean = false;
+  public isHinted: boolean = false; // Alias for compatibility
   public hasFreePair: boolean = false;
+  public isBlocked: boolean = false; // For compatibility
   public tileSizeX = 2;
   public tileSizeY = 2;
   public blockedBy: MjTile[] = [];
@@ -70,13 +74,18 @@ export class MjTile {
   public chaosOffsetY: number = 0;
   public chaosRotation: number = 0;
 
-  constructor(x: number, y: number, collection: MjTile[]) {
+  constructor(x: number, y: number, collection: MjTile[], id?: number) {
     this.x = x;
     this.y = y;
     this.z = this.getTileZCoordinate(collection);
     this.top = 0;
     this.left = 0;
     this.sortingOrder = this.z * 10000 - this.x * 100 + this.y;
+    this.id = id || this.sortingOrder;
+    // Sync alias properties
+    this.isSelected = this.selected;
+    this.isHinted = this.showHint;
+    this.updateBlockedState();
   }
 
   private getTileZCoordinate(collection: MjTile[]): number {
@@ -177,22 +186,31 @@ export class MjTile {
 
   public select(): void {
     this.selected = true;
+    this.isSelected = true;
   }
 
   public unselect(): void {
     this.selected = false;
+    this.isSelected = false;
   }
 
   public reset(): void {
     this.unselect();
     this.active = true;
+    this.updateBlockedState();
   }
 
   public startHint(): void {
     this.showHint = true;
+    this.isHinted = true;
   }
 
   public stopHint(): void {
     this.showHint = false;
+    this.isHinted = false;
+  }
+
+  public updateBlockedState(): void {
+    this.isBlocked = !this.isFree();
   }
 }

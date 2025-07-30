@@ -8,6 +8,33 @@ export class StorageService {
     this.dbReadyPromise = this.initializeDB();
   }
 
+  // LocalStorage compatibility methods
+  setItem(key: string, value: any): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+    }
+  }
+
+  getItem(key: string): any {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      console.error('Failed to read from localStorage:', error);
+      return null;
+    }
+  }
+
+  removeItem(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Failed to remove from localStorage:', error);
+    }
+  }
+
   private async initializeDB(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);

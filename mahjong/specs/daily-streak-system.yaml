@@ -1,0 +1,597 @@
+# Sistema de Ofensiva Diária e Tokens - Especificação Completa
+# Versão 1.0.0
+
+# ==================================================
+# 1. SISTEMA DE TOKENS (PONTUAÇÃO)
+# ==================================================
+
+tokens:
+  conceito: "Pontuação acumulada do jogador ao longo do tempo"
+  
+  fontes_de_ganho:
+    vitoria_partida:
+      base: 100
+      bonus_tempo: "10 tokens por minuto restante"
+      bonus_perfeito: 50  # Sem usar dicas
+    
+    ofensiva_diaria:
+      dia_1: 10
+      dia_2: 20
+      dia_3: 30
+      dia_7: 100
+      dia_14: 250
+      dia_30: 1000
+      multiplicador_marco: 2  # Dias 7, 14, 30, etc
+    
+    desafios_diarios:
+      facil: 25
+      medio: 50
+      dificil: 100
+      bonus_todos: 150  # Completar todos do dia
+    
+    conquistas:
+      primeira_vitoria: 50
+      dez_vitorias: 200
+      cem_vitorias: 1000
+      mestre_velocidade: 500  # Vitória < 2 min
+      sem_ajuda: 300  # 10 vitórias sem dicas
+  
+  usos:
+    dicas_jogo:
+      mostrar_jogada: 50
+      desfazer_ultima: 30
+      embaralhar: 100
+    
+    personalizacao:
+      temas_tabuleiro: 500
+      conjunto_pecas: 750
+      efeitos_visuais: 300
+      avatar_especial: 1000
+    
+    power_ups:
+      tempo_extra: 200  # +2 minutos
+      visao_raio_x: 150  # Ver peças por 5s
+      congelar_tempo: 300  # Pausa de 30s
+
+  display:
+    formato: "###,###"
+    animacao_ganho: true
+    som_moeda: true
+
+# ==================================================
+# 2. SISTEMA DE OFENSIVA DIÁRIA (STREAK)
+# ==================================================
+
+ofensiva_diaria:
+  conceito: "Dias consecutivos jogando para ganhar recompensas progressivas"
+  
+  regras:
+    inicio_streak:
+      trigger: "Completar pelo menos 1 partida no dia"
+      horario_reset: "00:00 horário local"
+      tempo_graca: "23:59 do dia anterior"
+    
+    manutencao:
+      minimo_diario: "1 partida completa (vitória ou derrota)"
+      parcial_valido: false  # Partidas abandonadas não contam
+      modo_ferias:
+        duracao_maxima: 3  # dias
+        custo_tokens: 500  # por dia
+        limite_mes: 6  # dias totais
+    
+    perda_streak:
+      sem_jogar: "Não completar nenhuma partida em 24h"
+      reset_para: 0
+      notificacao: "Aviso 2h antes do reset"
+  
+  recompensas:
+    tabela_progressiva:
+      - dia: 1
+        tokens: 10
+        badge: "Iniciante"
+      - dia: 3
+        tokens: 30
+        badge: "Dedicado"
+      - dia: 7
+        tokens: 100
+        badge: "Semana Completa"
+        bonus: "Tema especial desbloqueado"
+      - dia: 14
+        tokens: 250
+        badge: "Duas Semanas"
+        bonus: "Avatar exclusivo"
+      - dia: 30
+        tokens: 1000
+        badge: "Mestre do Mês"
+        bonus: "Moldura dourada + título"
+      - dia: 60
+        tokens: 2500
+        badge: "Veterano"
+        bonus: "Efeitos especiais permanentes"
+      - dia: 100
+        tokens: 5000
+        badge: "Centurião"
+        bonus: "Conjunto de peças exclusivo"
+    
+    multiplicadores:
+      fim_de_semana: 1.5
+      feriados: 2.0
+      aniversario_conta: 3.0
+      evento_especial: 2.5
+  
+  indicadores_visuais:
+    contador_principal:
+      posicao: "header centro"
+      formato: "🔥 {dias} dias"
+      animacao_milestone: true
+      cor_progressiva:
+        1-6: "#FFA500"    # Laranja
+        7-29: "#FF6347"   # Vermelho
+        30-59: "#FFD700"  # Dourado
+        60+: "#9400D3"    # Roxo
+    
+    calendario_streak:
+      visualizacao: "últimos 30 dias"
+      dias_jogados: "✓"
+      dias_perdidos: "✗"
+      dia_atual: "destaque pulsante"
+    
+    proxima_recompensa:
+      exibir: true
+      formato: "Próximo: {tokens} em {dias} dias"
+      barra_progresso: true
+
+# ==================================================
+# 3. PERFIL DO USUÁRIO
+# ==================================================
+
+perfil_usuario:
+  informacoes_basicas:
+    nome:
+      editavel: true
+      tamanho_maximo: 20
+      validacao: "alfanumérico + espaços"
+    
+    avatar:
+      tipos:
+        - basicos: "10 avatares gratuitos"
+        - desbloqueados: "Por conquistas"
+        - comprados: "Com tokens"
+        - personalizados: "Upload próprio (premium)"
+      tamanho: "128x128px"
+      formato: "circular com borda"
+    
+    nivel:
+      calculo: "baseado em tokens totais ganhos"
+      formula: "nivel = floor(sqrt(tokens / 100))"
+      maximo: 100
+      beneficios:
+        - 5: "Desfazer ilimitado"
+        - 10: "Tema noturno"
+        - 20: "Estatísticas avançadas"
+        - 30: "Modo zen (sem tempo)"
+        - 50: "Criador de desafios"
+  
+  estatisticas:
+    gerais:
+      - partidas_jogadas: "Total histórico"
+      - vitorias: "Número e porcentagem"
+      - tempo_total: "Horas jogadas"
+      - melhor_tempo: "Recorde pessoal"
+      - tokens_totais: "Acumulado histórico"
+      - tokens_gastos: "Total utilizado"
+      - tokens_atuais: "Saldo disponível"
+    
+    por_modo:
+      classico:
+        - vitorias: 0
+        - tempo_medio: "00:00"
+        - melhor_tempo: "00:00"
+      
+      desafio_diario:
+        - completados: 0
+        - sequencia_atual: 0
+        - melhor_sequencia: 0
+      
+      competitivo:
+        - ranking: "N/A"
+        - pontos_liga: 0
+        - liga_atual: "Bronze"
+    
+    graficos:
+      - progresso_semanal: "Tokens ganhos por dia"
+      - distribuicao_horarios: "Quando mais joga"
+      - evolucao_tempo: "Melhoria de performance"
+  
+  conquistas:
+    categorias:
+      velocidade:
+        - "Relâmpago": "Vitória < 1 minuto"
+        - "Rápido": "Vitória < 3 minutos"
+        - "Sonic": "10 vitórias < 2 minutos"
+      
+      consistencia:
+        - "Dedicado": "Jogar 7 dias seguidos"
+        - "Comprometido": "Jogar 30 dias seguidos"
+        - "Lendário": "Jogar 100 dias seguidos"
+      
+      habilidade:
+        - "Sem Ajuda": "Vitória sem dicas"
+        - "Mestre": "100 vitórias"
+        - "Grão-Mestre": "1000 vitórias"
+      
+      especiais:
+        - "Madrugador": "Jogar às 5h da manhã"
+        - "Coruja": "Jogar após meia-noite"
+        - "Sortudo": "Vitória na primeira tentativa"
+    
+    display:
+      vitrines: 3  # Conquistas em destaque"
+      total_visivel: true
+      raridade:
+        comum: "#808080"
+        raro: "#0080FF"
+        épico: "#9400D3"
+        lendário: "#FFD700"
+  
+  social:
+    comparacao_amigos:
+      - tokens
+      - nivel
+      - ofensiva_atual
+      - conquistas
+    
+    compartilhamento:
+      - screenshot_vitoria
+      - marco_ofensiva
+      - nova_conquista
+      - recorde_pessoal
+
+# ==================================================
+# 4. SISTEMA DE REGRAS MODULARES
+# ==================================================
+
+regras_modulares:
+  interface_desafios:
+    tipo_base:
+      id: "string"
+      nome: "string"
+      descricao: "string"
+      dificuldade: "facil | medio | dificil"
+      recompensa_base: "number"
+      tempo_limite: "number (segundos)"
+      condicoes_vitoria: "array"
+      condicoes_especiais: "array"
+    
+    tipos_desafio:
+      tempo_limite:
+        parametros:
+          - tempo_maximo: "segundos"
+          - bonus_tempo_sobra: "tokens por segundo"
+      
+      movimentos_limitados:
+        parametros:
+          - movimentos_maximos: "number"
+          - penalidade_excesso: "tokens"
+      
+      sequencia_especifica:
+        parametros:
+          - pecas_obrigatorias: "array de peças"
+          - ordem_importa: "boolean"
+      
+      sem_desfazer:
+        parametros:
+          - permite_preview: "boolean"
+          - bonus_conclusao: "tokens"
+      
+      pecas_especiais:
+        parametros:
+          - pecas_douradas: "multiplicador de pontos"
+          - pecas_congeladas: "tempo para descongelar"
+          - pecas_bonus: "tokens extras"
+  
+  sistema_recompensas:
+    calculadora:
+      formula_base: |
+        recompensa = base * multiplicadores * bonus
+        onde:
+          base = recompensa_desafio
+          multiplicadores = produto de todos ativos
+          bonus = soma de todos os bônus
+    
+    modificadores:
+      primeira_tentativa: 1.5
+      sem_dicas: 1.3
+      tempo_recorde: 2.0
+      combo_perfeito: 1.8
+      evento_ativo: "variável"
+    
+    limites:
+      maximo_por_partida: 10000
+      maximo_diario: 50000
+      cooldown_farming: "30 min entre mesmos desafios"
+  
+  configuracao_flexivel:
+    arquivos:
+      regras_base: "/config/rules/base.json"
+      desafios_diarios: "/config/rules/daily.json"
+      eventos_especiais: "/config/rules/events.json"
+      balanceamento: "/config/rules/balance.json"
+    
+    hot_reload:
+      habilitado: true
+      validacao_schema: true
+      rollback_automatico: true
+    
+    override_por_usuario:
+      modo_criativo: "Criar próprios desafios"
+      compartilhar_regras: true
+      votar_melhores: true
+      curadoria_semanal: true
+
+# ==================================================
+# 5. INTEGRAÇÃO UI
+# ==================================================
+
+integracao_ui:
+  header_unificado:
+    desktop:
+      layout: "horizontal"
+      altura: "80px"
+      elementos:
+        esquerda:
+          - logo: "32x32px"
+          - nome_jogo: "Mahjong"
+        centro:
+          - contador_streak: "🔥 X dias"
+          - proxima_recompensa: "próximo: X tokens"
+        direita:
+          - avatar: "48x48px circular"
+          - nome_usuario: "clicavel"
+          - tokens: "🪙 X,XXX"
+          - menu_perfil: "dropdown"
+    
+    mobile:
+      layout: "compacto"
+      altura: "60px"
+      elementos:
+        linha_superior:
+          - menu_hamburguer: "esquerda"
+          - tokens: "centro"
+          - avatar: "direita"
+        linha_inferior:
+          - contador_streak: "esquerda"
+          - barra_progresso: "centro"
+          - notificacoes: "direita"
+      
+      gestos:
+        swipe_down: "expandir detalhes"
+        tap_avatar: "perfil rápido"
+        hold_tokens: "histórico"
+  
+  indicadores_progresso:
+    streak_em_risco:
+      horario_aviso: "22:00"
+      visual: "borda vermelha pulsante"
+      notificacao_push: true
+      mensagem: "Jogue agora para manter sua ofensiva!"
+    
+    marco_proximo:
+      exibir_quando: "80% do próximo marco"
+      animacao: "brilho dourado"
+      preview_recompensa: true
+    
+    nivel_subindo:
+      barra_experiencia: true
+      animacao_levelup: "explosão de partículas"
+      som_especial: true
+      duracao: "3 segundos"
+  
+  notificacoes:
+    tipos:
+      streak_mantido:
+        icone: "✓"
+        cor: "verde"
+        duracao: "3s"
+        posicao: "top-center"
+      
+      tokens_ganhos:
+        icone: "🪙"
+        cor: "dourado"
+        duracao: "2s"
+        posicao: "top-right"
+        animacao: "float-up"
+      
+      conquista_desbloqueada:
+        icone: "🏆"
+        cor: "conforme raridade"
+        duracao: "5s"
+        posicao: "center"
+        som: "fanfarra"
+      
+      desafio_disponivel:
+        icone: "❗"
+        cor: "azul"
+        duracao: "4s"
+        posicao: "bottom-right"
+        acao: "clique para jogar"
+  
+  temas_visuais:
+    modo_streak:
+      1-6_dias: "tema_bronze"
+      7-29_dias: "tema_prata"
+      30-59_dias: "tema_ouro"
+      60+_dias: "tema_platina"
+      
+    personalizacao:
+      cor_principal: "customizável"
+      efeitos_particulas: "on/off"
+      animacoes_reduzidas: "acessibilidade"
+      modo_daltonico: "3 opções"
+
+# ==================================================
+# 6. FLUXOS DE USO
+# ==================================================
+
+fluxos_uso:
+  primeiro_acesso:
+    passos:
+      1: "Tela de boas-vindas com explicação do sistema"
+      2: "Tutorial interativo sobre tokens e ofensiva"
+      3: "Primeira partida com dicas ativadas"
+      4: "Recompensa inicial: 50 tokens"
+      5: "Convite para criar perfil"
+  
+  rotina_diaria:
+    login:
+      - verificar_streak: "Checar se manteve ofensiva"
+      - exibir_recompensas: "Se houver marco atingido"
+      - mostrar_desafios: "3 desafios diários disponíveis"
+      - notificar_eventos: "Se houver evento especial"
+    
+    durante_jogo:
+      - atualizar_tokens: "Em tempo real ao ganhar"
+      - mostrar_progresso: "Barra de XP do nível"
+      - indicar_bonus: "Multiplicadores ativos"
+    
+    fim_partida:
+      - calcular_recompensas: "Base + bônus + multiplicadores"
+      - animar_ganhos: "Moedas voando para o contador"
+      - checar_conquistas: "Novas conquistas desbloqueadas"
+      - sugerir_proximo: "Desafio ou modo de jogo"
+  
+  casos_especiais:
+    perda_iminente:
+      trigger: "23:00 sem jogar"
+      acoes:
+        - notificacao_urgente: "Push + in-app"
+        - oferta_rapida: "Partida rápida de 1 minuto"
+        - modo_emergencia: "Vale para manter streak"
+    
+    retorno_apos_ausencia:
+      trigger: "> 7 dias sem jogar"
+      acoes:
+        - bonus_retorno: "2x tokens por 3 dias"
+        - recuperar_streak: "50% do streak anterior"
+        - desafios_faceis: "Para reengajamento"
+    
+    marco_especial:
+      trigger: "Dias 7, 30, 100, etc"
+      acoes:
+        - tela_celebracao: "Fullscreen com confetes"
+        - compartilhar_social: "Opção de postar"
+        - desbloqueio_especial: "Conteúdo exclusivo"
+        - bonus_surpresa: "Recompensa extra não anunciada"
+
+# ==================================================
+# 7. DADOS E PERSISTÊNCIA
+# ==================================================
+
+dados_persistencia:
+  local_storage:
+    perfil_basico:
+      - user_id: "UUID"
+      - nome: "string"
+      - avatar_id: "string"
+      - nivel: "number"
+      - tokens_atuais: "number"
+    
+    estatisticas_locais:
+      - partidas_hoje: "number"
+      - melhor_tempo_sessao: "number"
+      - tokens_ganhos_sessao: "number"
+  
+  backend_sync:
+    frequencia: "A cada partida completa"
+    dados_sincronizados:
+      - tokens_totais
+      - ofensiva_atual
+      - conquistas_desbloqueadas
+      - estatisticas_globais
+      - configuracoes_perfil
+    
+    offline_mode:
+      - acumular_mudancas: true
+      - sincronizar_ao_conectar: true
+      - limite_offline: "7 dias"
+  
+  analytics:
+    eventos_rastreados:
+      - partida_iniciada
+      - partida_completa
+      - tokens_gastos
+      - conquista_desbloqueada
+      - streak_perdido
+      - compra_item
+    
+    metricas_importantes:
+      - retencao_diaria
+      - tempo_medio_sessao
+      - taxa_conversao_tokens
+      - dias_ate_primeiro_gasto
+      - ltv_por_usuario
+
+# ==================================================
+# 8. BALANCEAMENTO E ECONOMIA
+# ==================================================
+
+balanceamento:
+  economia_tokens:
+    inflacao_controle:
+      - ganho_maximo_diario: 5000
+      - cooldown_partidas: "1 min entre ganhos"
+      - diminuicao_recompensas: "Após 20 partidas/dia"
+    
+    sink_tokens:
+      essenciais:
+        - dicas_jogo: "Consumo constante"
+        - modo_ferias: "Sink de alto valor"
+      
+      opcionais:
+        - personalizacao: "Sink de médio valor"
+        - power_ups: "Sink temporário"
+      
+      sociais:
+        - presentes_amigos: "100 tokens"
+        - torneios_entrada: "Variável"
+  
+  ajustes_dificuldade:
+    adaptativo:
+      - taxa_vitoria_alvo: "60-70%"
+      - ajuste_sutil: "±5% por sessão"
+      - resetar_mensalmente: true
+    
+    por_nivel:
+      1-10: "Dificuldade reduzida 20%"
+      11-30: "Dificuldade normal"
+      31-50: "Dificuldade +10%"
+      51+: "Dificuldade +20%"
+
+# ==================================================
+# 9. EXTENSÕES FUTURAS
+# ==================================================
+
+extensoes_planejadas:
+  social:
+    - clubes_jogadores: "Grupos com benefícios"
+    - desafios_amigos: "1v1 assíncrono"
+    - ranking_global: "Ligas mensais"
+    - mentoria: "Jogadores experientes ajudam novatos"
+  
+  eventos:
+    - sazonais: "Natal, Ano Novo, etc"
+    - tematicos: "Culturas diferentes"
+    - colaborativos: "Metas comunitárias"
+    - tempo_limitado: "48h especiais"
+  
+  monetizacao:
+    - vip_pass: "Benefícios mensais"
+    - pacotes_tokens: "Compra direta"
+    - remover_anuncios: "Compra única"
+    - season_pass: "Recompensas progressivas"
+  
+  gameplay:
+    - modo_infinito: "Sem limite de tempo"
+    - puzzles_diarios: "Quebra-cabeças únicos"
+    - modo_historia: "Campanha com narrativa"
+    - criador_niveis: "Compartilhar criações"

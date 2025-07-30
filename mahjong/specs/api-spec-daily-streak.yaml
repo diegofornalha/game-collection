@@ -1,0 +1,542 @@
+openapi: 3.0.0
+info:
+  title: Mahjong Daily Streak & Tokens API
+  version: 1.0.0
+  description: API para gerenciar sistema de pontuação (tokens) e ofensiva diária
+
+servers:
+  - url: https://api.mahjong.game/v1
+    description: Produção
+  - url: http://localhost:3000/v1
+    description: Desenvolvimento
+
+paths:
+  /user/profile:
+    get:
+      summary: Obter perfil completo do usuário
+      tags: [User]
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Perfil do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+    patch:
+      summary: Atualizar perfil do usuário
+      tags: [User]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 20
+                avatarId:
+                  type: string
+                selectedBadges:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Perfil atualizado
+
+  /user/tokens:
+    post:
+      summary: Adicionar ou remover tokens
+      tags: [Tokens]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, amount, type, reason]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: integer
+                  description: Positivo para adicionar, negativo para remover
+                type:
+                  type: string
+                  enum: [game_win, daily_streak, achievement, purchase, hint_use, shop_item]
+                reason:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        200:
+          description: Transação realizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newBalance:
+                    type: integer
+                  transaction:
+                    $ref: '#/components/schemas/TokenTransaction'
+
+  /daily-streak/check:
+    get:
+      summary: Verificar status da ofensiva diária
+      tags: [Daily Streak]
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Status da ofensiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakStatus'
+
+  /daily-streak/maintain:
+    post:
+      summary: Registrar partida para manter ofensiva
+      tags: [Daily Streak]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, gameId]
+              properties:
+                userId:
+                  type: string
+                gameId:
+                  type: string
+                completedAt:
+                  type: string
+                  format: date-time
+      responses:
+        200:
+          description: Ofensiva mantida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentStreak:
+                    type: integer
+                  reward:
+                    $ref: '#/components/schemas/StreakReward'
+                  nextMilestone:
+                    type: integer
+
+  /daily-streak/vacation:
+    post:
+      summary: Ativar modo férias
+      tags: [Daily Streak]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, days]
+              properties:
+                userId:
+                  type: string
+                days:
+                  type: integer
+                  minimum: 1
+                  maximum: 3
+      responses:
+        200:
+          description: Modo férias ativado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  protectedUntil:
+                    type: string
+                    format: date-time
+                  tokensCost:
+                    type: integer
+                  remainingVacationDays:
+                    type: integer
+
+  /game/complete:
+    post:
+      summary: Registrar conclusão de partida
+      tags: [Game]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, gameId, result]
+              properties:
+                userId:
+                  type: string
+                gameId:
+                  type: string
+                result:
+                  type: string
+                  enum: [victory, defeat, abandoned]
+                timeElapsed:
+                  type: integer
+                  description: Segundos
+                timeRemaining:
+                  type: integer
+                  description: Segundos restantes (para vitória)
+                hintsUsed:
+                  type: integer
+                movesCount:
+                  type: integer
+      responses:
+        200:
+          description: Partida registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResult'
+
+  /achievements/check:
+    post:
+      summary: Verificar conquistas desbloqueadas
+      tags: [Achievements]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, trigger]
+              properties:
+                userId:
+                  type: string
+                trigger:
+                  type: string
+                  enum: [game_complete, streak_update, tokens_earned, profile_update]
+                context:
+                  type: object
+      responses:
+        200:
+          description: Conquistas verificadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newAchievements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Achievement'
+
+  /shop/items:
+    get:
+      summary: Listar itens disponíveis na loja
+      tags: [Shop]
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [themes, pieces, avatars, effects, powerups]
+      responses:
+        200:
+          description: Lista de itens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopItem'
+
+  /shop/purchase:
+    post:
+      summary: Comprar item com tokens
+      tags: [Shop]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, itemId]
+              properties:
+                userId:
+                  type: string
+                itemId:
+                  type: string
+      responses:
+        200:
+          description: Compra realizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/ShopItem'
+                  newBalance:
+                    type: integer
+
+  /stats/leaderboard:
+    get:
+      summary: Obter ranking de jogadores
+      tags: [Statistics]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [tokens, streak, level, weekly, monthly]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        200:
+          description: Ranking
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+
+components:
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        avatarId:
+          type: string
+        level:
+          type: integer
+        experience:
+          type: integer
+        experienceToNext:
+          type: integer
+        tokens:
+          type: integer
+        tokensTotal:
+          type: integer
+        tokensSpent:
+          type: integer
+        currentStreak:
+          type: integer
+        bestStreak:
+          type: integer
+        stats:
+          $ref: '#/components/schemas/UserStats'
+        achievements:
+          type: array
+          items:
+            type: string
+        unlockedItems:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UserStats:
+      type: object
+      properties:
+        gamesPlayed:
+          type: integer
+        gamesWon:
+          type: integer
+        winRate:
+          type: number
+        totalPlayTime:
+          type: integer
+        averageGameTime:
+          type: integer
+        bestTime:
+          type: integer
+        perfectGames:
+          type: integer
+          description: Vitórias sem usar dicas
+
+    StreakStatus:
+      type: object
+      properties:
+        currentStreak:
+          type: integer
+        lastPlayedAt:
+          type: string
+          format: date-time
+        mustPlayBy:
+          type: string
+          format: date-time
+        isProtected:
+          type: boolean
+        protectedUntil:
+          type: string
+          format: date-time
+        nextReward:
+          type: object
+          properties:
+            day:
+              type: integer
+            tokens:
+              type: integer
+            badge:
+              type: string
+
+    StreakReward:
+      type: object
+      properties:
+        day:
+          type: integer
+        baseTokens:
+          type: integer
+        multiplier:
+          type: number
+        totalTokens:
+          type: integer
+        badge:
+          type: string
+        specialReward:
+          type: string
+
+    TokenTransaction:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: integer
+        type:
+          type: string
+        reason:
+          type: string
+        balanceBefore:
+          type: integer
+        balanceAfter:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    GameResult:
+      type: object
+      properties:
+        gameId:
+          type: string
+        result:
+          type: string
+        tokensEarned:
+          type: object
+          properties:
+            base:
+              type: integer
+            timeBonus:
+              type: integer
+            perfectionBonus:
+              type: integer
+            multipliers:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  value:
+                    type: number
+            total:
+              type: integer
+        streakMaintained:
+          type: boolean
+        newAchievements:
+          type: array
+          items:
+            type: string
+
+    Achievement:
+      type: object
+      properties:
+        achievementId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+        tokensReward:
+          type: integer
+        unlockedAt:
+          type: string
+          format: date-time
+        progress:
+          type: object
+          properties:
+            current:
+              type: integer
+            required:
+              type: integer
+
+    ShopItem:
+      type: object
+      properties:
+        itemId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: integer
+        previewUrl:
+          type: string
+        unlockLevel:
+          type: integer
+        limited:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        avatarId:
+          type: string
+        value:
+          type: integer
+        level:
+          type: integer
+        badges:
+          type: array
+          items:
+            type: string
