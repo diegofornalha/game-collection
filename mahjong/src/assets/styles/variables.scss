@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // Color Palette
 $primary: #42b883;
 $secondary: #35495e;
@@ -111,4 +113,26 @@ $touch-large: 56px;
   // Touch
   --touch-min: #{$touch-min};
   --touch-comfortable: #{$touch-comfortable};
+  
+  // Component colors
+  --surface-color: #{$bg-primary};
+  --border-color: #{$tile-border};
+  --primary-color: #{$primary};
+  --primary-color-light: #{color.scale($primary, $lightness: 40%)};
+  --hover-bg: #{$bg-secondary};
+  
+  // Shadows
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  
+  // Border radius
+  --border-radius-sm: #{$radius-sm};
+  --border-radius-md: #{$radius-md};
+  --border-radius-lg: #{$radius-lg};
+  --border-radius-xl: #{$radius-xl};
+  
+  // Layout
+  --header-height: 80px;
+  --bottom-nav-height: 60px;
 }

@@ -861,120 +861,248 @@ function shuffleRemainingTiles() {
   // Get all active (remaining) tiles
   const activeTiles = gameStore.tiles.filter(tile => tile.active);
   
-  // If we have less than 2 tiles, nothing to shuffle
+  // Edge case: If we have less than 2 tiles, nothing to shuffle
   if (activeTiles.length < 2) {
     return;
   }
   
-  // Save original types in case we need to restore
-  const originalTypes = activeTiles.map(tile => tile.type);
+  // Get all tile types currently in play
+  const allTypes = activeTiles.map(tile => tile.type).filter(type => type !== null) as MjTileType[];
   
-  // Smart shuffle: ensure at least one valid pair exists
-  // First, get all free tiles
-  const freeTiles = activeTiles.filter(tile => tile.isFree());
-  
-  // If we have at least 2 free tiles, ensure they can match
-  if (freeTiles.length >= 2) {
-    // Create a type distribution that guarantees matches
-    const typeGroups = new Map<string, MjTileType[]>();
+  // Phase 1: Calculate strategic value for each tile position
+  const tilesWithValue = activeTiles.map(tile => {
+    let strategicValue = 0;
     
-    // Group types by their matching criteria
-    originalTypes.forEach(type => {
-      if (type) {
-        const key = `${type.group}-${type.index}`;
-        if (!typeGroups.has(key)) {
-          typeGroups.set(key, []);
-        }
-        typeGroups.get(key)!.push(type);
-      }
-    });
+    // Higher layers have lower strategic value (harder to reach)
+    strategicValue += (5 - tile.z) * 10;
     
-    // Create a shuffled array ensuring pairs for free tiles
-    const shuffledTypes: (MjTileType | null)[] = [];
-    const usedTypes: MjTileType[] = [];
-    
-    // First, ensure at least one matching pair among free tiles
-    let guaranteedPairAdded = false;
-    
-    typeGroups.forEach((types) => {
-      if (types.length >= 2 && !guaranteedPairAdded) {
-        // We have at least 2 of this type, use them to guarantee a match
-        usedTypes.push(types[0], types[1]);
-        guaranteedPairAdded = true;
-      }
-    });
-    
-    // Add remaining types
-    originalTypes.forEach(type => {
-      if (type && !usedTypes.includes(type)) {
-        shuffledTypes.push(type);
-      }
-    });
-    
-    // Add the guaranteed pair types at random positions
-    usedTypes.forEach(type => {
-      const randomIndex = Math.floor(Math.random() * (shuffledTypes.length + 1));
-      shuffledTypes.splice(randomIndex, 0, type);
-    });
-    
-    // Now assign the shuffled types, making sure free tiles get matchable types
-    let typeIndex = 0;
-    
-    // Assign to free tiles first to ensure they get the guaranteed pairs
-    const freeIndices = new Set<number>();
-    activeTiles.forEach((tile, index) => {
-      if (tile.isFree()) {
-        freeIndices.add(index);
-      }
-    });
-    
-    // Smart assignment: put matching types on free tiles
-    activeTiles.forEach((tile) => {
-      if (typeIndex < shuffledTypes.length) {
-        tile.type = shuffledTypes[typeIndex++];
-      }
-    });
-    
-    // Final shuffle to randomize while maintaining validity
-    let attempts = 0;
-    const maxAttempts = 50;
-    
-    while (!hasValidMoves(gameStore.tiles) && attempts < maxAttempts) {
-      // Swap random tiles
-      const i = Math.floor(Math.random() * activeTiles.length);
-      const j = Math.floor(Math.random() * activeTiles.length);
+    // Free tiles have maximum strategic value
+    if (tile.isFree()) {
+      strategicValue += 100;
+    } else {
+      // Tiles that will become free soon have moderate value
+      const blockingTilesCount = tile.blockedBy.filter(t => t.active).length;
+      const adjacentBlocksLeft = tile.adjacentL.filter(t => t.active).length;
+      const adjacentBlocksRight = tile.adjacentR.filter(t => t.active).length;
       
-      if (i !== j) {
-        const temp = activeTiles[i].type;
-        activeTiles[i].type = activeTiles[j].type;
-        activeTiles[j].type = temp;
-      }
+      // Fewer blocking tiles = higher value
+      strategicValue += Math.max(0, 50 - (blockingTilesCount * 10));
       
-      attempts++;
+      // Consider side blocks (need at least one side free)
+      const sideBlockPenalty = Math.min(adjacentBlocksLeft, adjacentBlocksRight) * 20;
+      strategicValue -= sideBlockPenalty;
     }
     
-    // If still no valid moves, do a fallback shuffle
-    if (!hasValidMoves(gameStore.tiles)) {
-      console.warn('Smart shuffle failed, using fallback method');
-      
-      // Fallback: ensure two free tiles have the same type
-      if (freeTiles.length >= 2 && originalTypes.length > 0) {
-        freeTiles[0].type = originalTypes[0];
-        freeTiles[1].type = originalTypes[0];
+    // Center tiles are slightly more valuable (more likely to block others)
+    const centerX = 9; // Assuming standard layout
+    const centerY = 4;
+    const distanceFromCenter = Math.abs(tile.x - centerX) + Math.abs(tile.y - centerY);
+    strategicValue += Math.max(0, 20 - distanceFromCenter);
+    
+    return { tile, strategicValue };
+  });
+  
+  // Sort tiles by strategic value (highest first)
+  tilesWithValue.sort((a, b) => b.strategicValue - a.strategicValue);
+  
+  // Phase 2: Group tiles by layers and freedom status
+  const freeTiles = tilesWithValue.filter(t => t.tile.isFree()).map(t => t.tile);
+  const semiFreeTiles = tilesWithValue
+    .filter(t => !t.tile.isFree() && t.strategicValue > 30)
+    .map(t => t.tile);
+  const blockedTiles = tilesWithValue
+    .filter(t => !t.tile.isFree() && t.strategicValue <= 30)
+    .map(t => t.tile);
+  
+  console.log(`Shuffling ${activeTiles.length} tiles: ${freeTiles.length} free, ${semiFreeTiles.length} semi-free, ${blockedTiles.length} blocked`);
+  
+  // Phase 3: Smart type distribution algorithm
+  // Group types by matching criteria to find pairs
+  const typeGroups = new Map<string, MjTileType[]>();
+  allTypes.forEach(type => {
+    const key = type.matchAny ? `${type.group}-any` : `${type.group}-${type.index}`;
+    if (!typeGroups.has(key)) {
+      typeGroups.set(key, []);
+    }
+    typeGroups.get(key)!.push(type);
+  });
+  
+  // Categorize types into strategic groups
+  const matchingPairs: Array<[MjTileType, MjTileType]> = [];
+  const additionalPairs: MjTileType[] = [];
+  const singleTypes: MjTileType[] = [];
+  
+  typeGroups.forEach((types) => {
+    const pairCount = Math.floor(types.length / 2);
+    
+    // First few pairs are guaranteed matching pairs
+    for (let i = 0; i < pairCount; i++) {
+      if (i < Math.ceil(freeTiles.length / 2)) {
+        matchingPairs.push([types[i * 2], types[i * 2 + 1]]);
+      } else {
+        additionalPairs.push(types[i * 2], types[i * 2 + 1]);
       }
+    }
+    
+    // Handle odd type
+    if (types.length % 2 === 1) {
+      singleTypes.push(types[types.length - 1]);
+    }
+  });
+  
+  console.log(`Strategic distribution: ${matchingPairs.length} guaranteed pairs, ${additionalPairs.length} additional paired types, ${singleTypes.length} singles`);
+  
+  // Phase 4: Layer-aware tile assignment
+  const typesToAssign: MjTileType[] = [];
+  
+  // Ensure matching pairs are placed on free tiles
+  if (freeTiles.length >= 2 && matchingPairs.length > 0) {
+    // Calculate how many pairs we can guarantee on free tiles
+    const guaranteedPairCount = Math.min(
+      Math.floor(freeTiles.length / 2),
+      matchingPairs.length
+    );
+    
+    // Place guaranteed pairs first
+    for (let i = 0; i < guaranteedPairCount; i++) {
+      typesToAssign.push(matchingPairs[i][0], matchingPairs[i][1]);
+    }
+    
+    // Add remaining pairs to general pool
+    for (let i = guaranteedPairCount; i < matchingPairs.length; i++) {
+      additionalPairs.push(matchingPairs[i][0], matchingPairs[i][1]);
     }
   } else {
-    // Not enough free tiles, just do a regular shuffle
-    const remainingTypes = [...originalTypes];
-    
-    for (let i = remainingTypes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [remainingTypes[i], remainingTypes[j]] = [remainingTypes[j], remainingTypes[i]];
-    }
-    
-    activeTiles.forEach((tile, index) => {
-      tile.type = remainingTypes[index];
+    // If we can't guarantee pairs on free tiles, add all pairs to pool
+    matchingPairs.forEach(pair => {
+      additionalPairs.push(pair[0], pair[1]);
     });
+  }
+  
+  // Shuffle additional pairs and singles separately
+  const shuffleArray = <T>(array: T[]): T[] => {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+  
+  // Add shuffled additional types
+  typesToAssign.push(...shuffleArray(additionalPairs));
+  typesToAssign.push(...shuffleArray(singleTypes));
+  
+  // Phase 5: Assign types with strategic placement
+  let typeIndex = 0;
+  
+  // Priority 1: Free tiles (guaranteed to get matching pairs)
+  freeTiles.forEach(tile => {
+    if (typeIndex < typesToAssign.length) {
+      tile.type = typesToAssign[typeIndex++];
+    }
+  });
+  
+  // Priority 2: Semi-free tiles (will become free soon)
+  semiFreeTiles.forEach(tile => {
+    if (typeIndex < typesToAssign.length) {
+      tile.type = typesToAssign[typeIndex++];
+    }
+  });
+  
+  // Priority 3: Blocked tiles
+  blockedTiles.forEach(tile => {
+    if (typeIndex < typesToAssign.length) {
+      tile.type = typesToAssign[typeIndex++];
+    }
+  });
+  
+  // Phase 6: Validation with intelligent fallback
+  if (!hasValidMoves(gameStore.tiles)) {
+    console.warn('Initial shuffle has no valid moves, applying strategic recovery...');
+    
+    // Strategic recovery: Find the best tiles to force a match on
+    if (freeTiles.length >= 2) {
+      // Find a type that appears multiple times
+      const typeCount = new Map<string, { type: MjTileType; tiles: MjTile[] }>();
+      
+      activeTiles.forEach(tile => {
+        if (tile.type) {
+          const key = tile.type.matchAny ? `${tile.type.group}-any` : `${tile.type.group}-${tile.type.index}`;
+          if (!typeCount.has(key)) {
+            typeCount.set(key, { type: tile.type, tiles: [] });
+          }
+          typeCount.get(key)!.tiles.push(tile);
+        }
+      });
+      
+      // Find type with most occurrences that includes at least one blocked tile
+      let bestRecoveryType: MjTileType | null = null;
+      let maxBlockedCount = 0;
+      
+      typeCount.forEach(({ type, tiles }) => {
+        if (tiles.length >= 2) {
+          const blockedCount = tiles.filter(t => !t.isFree()).length;
+          if (blockedCount > maxBlockedCount) {
+            maxBlockedCount = blockedCount;
+            bestRecoveryType = type;
+          }
+        }
+      });
+      
+      if (bestRecoveryType) {
+        // Swap this type to two free tiles
+        const sourceTiles = typeCount.get(
+          bestRecoveryType.matchAny ? `${bestRecoveryType.group}-any` : `${bestRecoveryType.group}-${bestRecoveryType.index}`
+        )!.tiles.filter(t => !t.isFree()).slice(0, 2);
+        
+        if (sourceTiles.length >= 2) {
+          // Swap types between free and blocked tiles
+          const tempType1 = freeTiles[0].type;
+          const tempType2 = freeTiles[1].type;
+          
+          freeTiles[0].type = sourceTiles[0].type;
+          freeTiles[1].type = sourceTiles[1].type;
+          sourceTiles[0].type = tempType1;
+          sourceTiles[1].type = tempType2;
+          
+          console.log('Strategic recovery: swapped tiles to ensure valid move');
+        }
+      } else {
+        // Fallback: Force any matching pair on free tiles
+        const emergencyType = allTypes.find(type => {
+          const count = allTypes.filter(t => t.matches(type)).length;
+          return count >= 2;
+        });
+        
+        if (emergencyType) {
+          freeTiles[0].type = emergencyType;
+          freeTiles[1].type = emergencyType;
+          console.log('Emergency recovery: forced matching pair on free tiles');
+        }
+      }
+    } else if (freeTiles.length === 1 && semiFreeTiles.length >= 1) {
+      // Edge case: Only one free tile, try to match with semi-free
+      const freeType = freeTiles[0].type;
+      const matchingSemiFree = semiFreeTiles.find(tile => 
+        tile.type && freeType && tile.type.matches(freeType)
+      );
+      
+      if (!matchingSemiFree && allTypes.length >= 2) {
+        // Force a match between the free tile and most accessible semi-free tile
+        const mostAccessible = semiFreeTiles[0];
+        const matchType = allTypes.find(type => {
+          const count = allTypes.filter(t => t.matches(type)).length;
+          return count >= 2;
+        });
+        
+        if (matchType) {
+          freeTiles[0].type = matchType;
+          mostAccessible.type = matchType;
+          console.log('Edge case recovery: matched free tile with semi-free tile');
+        }
+      }
+    }
   }
   
   // Force Vue to update the view
@@ -983,12 +1111,33 @@ function shuffleRemainingTiles() {
   // Clear selection if any
   gameStore.clearSelection();
   
-  // Clear undo/redo stacks since positions changed
+  // Clear undo/redo stacks since shuffle occurred
   gameStore.clearUndoRedo();
   
-  // Log result
+  // Update free pairs after shuffle
+  updateFreePairs();
+  
+  // Final validation
   const hasValidMovesAfter = hasValidMoves(gameStore.tiles);
   console.log('Shuffle complete. Valid moves available:', hasValidMovesAfter);
+  
+  // Log strategic metrics for debugging
+  if (hasValidMovesAfter) {
+    const finalFreeTiles = gameStore.tiles.filter(t => t.active && t.isFree());
+    const matchingFreePairs = [];
+    
+    for (let i = 0; i < finalFreeTiles.length - 1; i++) {
+      for (let j = i + 1; j < finalFreeTiles.length; j++) {
+        if (finalFreeTiles[i].matches(finalFreeTiles[j])) {
+          matchingFreePairs.push([finalFreeTiles[i], finalFreeTiles[j]]);
+        }
+      }
+    }
+    
+    console.log(`Shuffle metrics: ${matchingFreePairs.length} valid moves available on ${finalFreeTiles.length} free tiles`);
+  } else {
+    console.error('Shuffle failed to create valid moves despite recovery attempts!');
+  }
   
   // If permanent hint is enabled, show the new hints
   if (gameStore.permanentHint && hasValidMovesAfter) {

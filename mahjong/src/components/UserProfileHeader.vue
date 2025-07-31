@@ -18,7 +18,7 @@
 
     <div class="action-section">
       <!-- Game stats when in game mode -->
-      <div v-if="showGameStats" class="game-stats">
+      <div v-if="showGameStats && navigationStore.currentView === 'game'" class="game-stats">
         <div class="game-score">
           <span class="label">Pontos:</span>
           <span class="value">{{ gameStore.score }}</span>
@@ -29,8 +29,8 @@
         </div>
       </div>
       
+      <!-- Daily Streak sempre visível -->
       <DailyStreakIndicator
-        v-else
         :streak="dailyStreakStore.streakData.currentStreak"
         :is-active="dailyStreakStore.isStreakActive"
         :vacation-mode="dailyStreakStore.streakData.isVacationMode"
@@ -40,57 +40,23 @@
         compact
       />
       
-      <button @click="toggleMenu" class="menu-toggle" aria-label="Menu">
-        <i class="fas fa-bars"></i>
-      </button>
-      
-      <RouterLink to="/settings" class="settings-link desktop-only">
-        <i class="fas fa-cog"></i>
-      </RouterLink>
+      <!-- Navigation Menu inline para desktop -->
+      <NavigationMenu v-if="!isMobile" variant="inline" />
     </div>
     
-    <!-- Mobile Menu Overlay -->
-    <Transition name="menu">
-      <div v-if="menuOpen" class="mobile-menu" @click="closeMenu">
-        <div class="menu-content" @click.stop>
-          <div class="menu-header">
-            <h3>Menu</h3>
-            <button @click="closeMenu" class="close-btn">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <nav class="menu-nav">
-            <RouterLink to="/" @click="closeMenu">
-              <i class="fas fa-home"></i> Início
-            </RouterLink>
-            <RouterLink to="/profile" @click="closeMenu">
-              <i class="fas fa-user"></i> Perfil
-            </RouterLink>
-            <RouterLink to="/settings" @click="closeMenu">
-              <i class="fas fa-cog"></i> Configurações
-            </RouterLink>
-            <RouterLink to="/achievements" @click="closeMenu">
-              <i class="fas fa-trophy"></i> Conquistas
-            </RouterLink>
-            <RouterLink to="/store" @click="closeMenu">
-              <i class="fas fa-store"></i> Loja
-            </RouterLink>
-          </nav>
-        </div>
-      </div>
-    </Transition>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useUserProfileStore } from '../stores/gamification/userProfile.store'
 import { useGameStore } from '../stores/game.store'
 import { useDailyStreakStore } from '../stores/gamification/dailyStreak.store'
+import { useNavigationStore } from '../stores/navigation.store'
 import UserLevelDisplay from './common/UserLevelDisplay.vue'
 import TokenDisplay from './TokenDisplay.vue'
 import DailyStreakIndicator from './DailyStreakIndicator.vue'
+import NavigationMenu from './NavigationMenu.vue'
 
 interface Props {
   variant?: 'default' | 'compact' | 'expanded'
@@ -104,34 +70,21 @@ const props = withDefaults(defineProps<Props>(), {
   showGameStats: false
 })
 
-const emit = defineEmits<{
-  'toggle-menu': []
-}>()
 
 const userStore = useUserProfileStore()
 const gameStore = useGameStore()
 const dailyStreakStore = useDailyStreakStore()
-const menuOpen = ref(false)
+const navigationStore = useNavigationStore()
+// Detectar se é mobile
+const isMobile = computed(() => window.innerWidth < 768)
 
 const computedClasses = computed(() => [
   'user-profile-header',
   `variant-${props.variant}`,
   {
-    'show-settings': props.showSettings,
-    'menu-open': menuOpen.value
+    'show-settings': props.showSettings
   }
 ])
-
-const toggleMenu = () => {
-  // Emit event for mobile integration
-  emit('toggle-menu')
-  // Keep internal menu for desktop
-  menuOpen.value = !menuOpen.value
-}
-
-const closeMenu = () => {
-  menuOpen.value = false
-}
 
 const formattedTime = computed(() => {
   const minutes = Math.floor(gameStore.timer / 60)
@@ -153,10 +106,15 @@ export default {
   justify-content: space-between;
   padding: 1rem;
   background: var(--surface-color);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: 0;
+  box-shadow: var(--shadow-md);
   gap: 1rem;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .user-section {
@@ -212,154 +170,26 @@ export default {
   }
 }
 
-.menu-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  border-radius: var(--border-radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
+/* Estilos removidos - menu agora está no NavigationMenu component */
 
-.menu-toggle:hover {
-  background: var(--hover-bg);
-  color: var(--primary-color);
-}
-
-.settings-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--border-radius-md);
-  color: var(--text-secondary);
-  transition: all 0.2s;
-}
-
-.settings-link:hover {
-  background: var(--hover-bg);
-  color: var(--primary-color);
-}
-
-/* Mobile Menu */
-.mobile-menu {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.menu-content {
-  background: var(--surface-color);
-  width: 280px;
-  height: 100%;
-  padding: 1.5rem;
-  overflow-y: auto;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.menu-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-}
-
-.menu-header h3 {
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
-}
-
-.menu-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.menu-nav a {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  text-decoration: none;
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s;
-}
-
-.menu-nav a:hover {
-  background: var(--hover-bg);
-  color: var(--primary-color);
-}
-
-.menu-nav a.router-link-active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.menu-nav i {
-  width: 20px;
-  text-align: center;
-}
-
-/* Transitions */
-.menu-enter-active,
-.menu-leave-active {
-  transition: opacity 0.3s;
-}
-
-.menu-enter-active .menu-content,
-.menu-leave-active .menu-content {
-  transition: transform 0.3s;
-}
-
-.menu-enter-from,
-.menu-leave-to {
-  opacity: 0;
-}
-
-.menu-enter-from .menu-content,
-.menu-leave-to .menu-content {
-  transform: translateX(100%);
+/* Safe area for iOS devices */
+.user-profile-header {
+  padding-top: calc(1rem + env(safe-area-inset-top));
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .menu-toggle {
-    display: flex;
-  }
-  
-  .desktop-only {
-    display: none;
+  .user-profile-header {
+    padding: 0.75rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
   }
   
   .user-stats {
-    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  /* Adjust action section on mobile */
+  .action-section {
     gap: 0.5rem;
   }
 }
@@ -367,6 +197,7 @@ export default {
 /* Variant: Compact */
 .variant-compact {
   padding: 0.75rem;
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
 }
 
 .variant-compact .user-name {

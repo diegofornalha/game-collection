@@ -1,22 +1,28 @@
 <template>
   <div id="app" :class="appClasses" :style="mobileStyles">
-    <!-- Mobile View -->
-    <MobileGameView v-if="isMobile" />
+    <!-- Header with navigation for all views -->
+    <UserProfileHeader 
+      v-if="showHeader"
+      :show-game-stats="navigationStore.currentView === 'game'"
+      :variant="headerVariant"
+    />
     
-    <!-- Desktop View -->
-    <GameView v-else />
+    <!-- View Container with navigation -->
+    <ViewContainer />
     
-    <!-- Global Dialogs -->
-    <!-- GameDialog will be rendered by TileField component when needed -->
+    <!-- Navigation Menu (Mobile only) -->
+    <NavigationMenu v-if="isMobile" variant="bottom" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, provide } from 'vue';
-import GameView from './components/GameView.vue';
-import MobileGameView from './components/MobileGameView.vue';
+import ViewContainer from './components/ViewContainer.vue';
+import NavigationMenu from './components/NavigationMenu.vue';
+import UserProfileHeader from './components/UserProfileHeader.vue';
 import { useMobileUI } from './composables/useMobileUI';
 import { useGameStore } from './stores/game.store';
+import { useNavigationStore } from './stores/navigation.store';
 
 // Mobile UI setup
 const { 
@@ -27,8 +33,9 @@ const {
   setViewportMeta 
 } = useMobileUI();
 
-// Game store
+// Stores
 const gameStore = useGameStore();
+const navigationStore = useNavigationStore();
 
 // Provide mobile context globally
 provide('isMobile', isMobile);
@@ -42,8 +49,22 @@ const appClasses = computed(() => ({
   'app-desktop': !isMobile.value && !isTablet.value,
   'app-portrait': isPortrait.value,
   'app-landscape': !isPortrait.value,
-  'theme-dark': gameStore.theme === 'dark'
+  'theme-dark': gameStore.theme === 'dark',
+  'has-header': showHeader.value,
+  'game-view': navigationStore.currentView === 'game'
 }));
+
+// Header visibility and variant
+const showHeader = computed(() => {
+  return navigationStore.currentView !== 'game' || !isMobile.value;
+});
+
+const headerVariant = computed(() => {
+  if (isMobile.value && navigationStore.currentView === 'game') {
+    return 'compact';
+  }
+  return 'default';
+});
 
 // Initialize mobile settings
 onMounted(() => {
@@ -84,6 +105,9 @@ html, body {
   position: relative;
   background: var(--bg-primary);
   color: var(--text-primary);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   
   // CSS Variables from mobile composable
   --safe-area-top: v-bind('mobileStyles["--safe-area-top"]');
@@ -92,6 +116,9 @@ html, body {
   --safe-area-right: v-bind('mobileStyles["--safe-area-right"]');
   --ui-scale: v-bind('mobileStyles["--ui-scale"]');
   --tile-size: v-bind('mobileStyles["--tile-size"]');
+  
+  // Header height for layout calculations
+  --header-height: 80px;
 }
 
 // Mobile-specific styles
@@ -133,6 +160,19 @@ html, body {
   }
 }
 
+// Layout adjustments when header is present
+.has-header {
+  // ViewContainer already handles padding
+}
+
+// Game view specific adjustments
+.game-view.app-mobile {
+  // Full screen game on mobile
+  .user-profile-header {
+    display: none;
+  }
+}
+
 // Smooth transitions
 * {
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -141,5 +181,20 @@ html, body {
 // Disable transitions during resize
 .resizing * {
   transition: none !important;
+}
+
+// Ensure proper layering
+.user-profile-header {
+  z-index: 1000;
+}
+
+.navigation-menu {
+  z-index: 1001;
+}
+
+.view-container {
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
 }
 </style>
