@@ -24,7 +24,6 @@ const HomeView = defineAsyncComponent(() => import('./views/HomeView.vue'));
 const ProfileView = defineAsyncComponent(() => import('./views/ProfileView.vue'));
 const SettingsView = defineAsyncComponent(() => import('./views/SettingsView.vue'));
 const AchievementsView = defineAsyncComponent(() => import('./views/AchievementsView.vue'));
-const StoreView = defineAsyncComponent(() => import('./views/StoreView.vue'));
 
 const navigationStore = useNavigationStore();
 
@@ -46,8 +45,7 @@ const currentViewComponent = computed(() => {
     game: isMobile.value ? MobileGameView : GameView,
     profile: ProfileView,
     settings: SettingsView,
-    achievements: AchievementsView,
-    store: StoreView
+    achievements: AchievementsView
   };
   
   return viewMap[navigationStore.currentView];
@@ -63,7 +61,7 @@ watch(() => navigationStore.currentView, (newView, oldView) => {
     return;
   }
 
-  const viewOrder: ViewType[] = ['home', 'game', 'profile', 'settings', 'achievements', 'store'];
+  const viewOrder: ViewType[] = ['home', 'game', 'profile', 'settings', 'achievements'];
   const oldIndex = viewOrder.indexOf(oldView);
   const newIndex = viewOrder.indexOf(newView);
 

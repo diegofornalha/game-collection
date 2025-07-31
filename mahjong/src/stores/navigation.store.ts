@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-export type ViewType = 'home' | 'game' | 'profile' | 'settings' | 'achievements' | 'store';
+export type ViewType = 'home' | 'game' | 'profile' | 'settings' | 'achievements';
 
 interface GameSnapshot {
   tiles: any[];
@@ -28,8 +28,7 @@ export const useNavigationStore = defineStore('navigation', () => {
       game: 'Mahjong',
       profile: 'Perfil',
       settings: 'Configurações',
-      achievements: 'Conquistas',
-      store: 'Loja'
+      achievements: 'Conquistas'
     };
     return titles[currentView.value];
   });

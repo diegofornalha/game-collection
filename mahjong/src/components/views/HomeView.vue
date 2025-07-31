@@ -115,7 +115,8 @@ function getChallengeIcon(type: string) {
 
 <style scoped>
 .home-view {
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
+  padding-top: 3rem; /* Extra space for header */
   max-width: 800px;
   margin: 0 auto;
   height: 100%;
@@ -285,7 +286,8 @@ function getChallengeIcon(type: string) {
 
 @media (max-width: 768px) {
   .home-view {
-    padding: 1rem;
+    padding: 2rem 1rem;
+    padding-top: 3rem; /* Extra space for header */
     padding-bottom: 80px; /* Espaço para menu bottom */
   }
   

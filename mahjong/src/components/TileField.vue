@@ -932,12 +932,18 @@ function shuffleRemainingTiles() {
   const additionalPairs: MjTileType[] = [];
   const singleTypes: MjTileType[] = [];
   
-  typeGroups.forEach((types) => {
+  // Debug: Log type groups
+  console.log('Type groups:');
+  typeGroups.forEach((types, key) => {
+    console.log(`  ${key}: ${types.length} tiles`);
+  });
+  
+  typeGroups.forEach((types, key) => {
     const pairCount = Math.floor(types.length / 2);
     
     // First few pairs are guaranteed matching pairs
     for (let i = 0; i < pairCount; i++) {
-      if (i < Math.ceil(freeTiles.length / 2)) {
+      if (matchingPairs.length < Math.ceil(freeTiles.length / 2)) {
         matchingPairs.push([types[i * 2], types[i * 2 + 1]]);
       } else {
         additionalPairs.push(types[i * 2], types[i * 2 + 1]);
@@ -963,14 +969,45 @@ function shuffleRemainingTiles() {
       matchingPairs.length
     );
     
+    console.log(`Guaranteeing ${guaranteedPairCount} pairs on ${freeTiles.length} free tiles`);
+    
     // Place guaranteed pairs first
     for (let i = 0; i < guaranteedPairCount; i++) {
       typesToAssign.push(matchingPairs[i][0], matchingPairs[i][1]);
+      console.log(`  Adding guaranteed pair: ${matchingPairs[i][0].group}${matchingPairs[i][0].index} & ${matchingPairs[i][1].group}${matchingPairs[i][1].index}`);
     }
     
     // Add remaining pairs to general pool
     for (let i = guaranteedPairCount; i < matchingPairs.length; i++) {
       additionalPairs.push(matchingPairs[i][0], matchingPairs[i][1]);
+    }
+  } else if (freeTiles.length >= 2) {
+    // No matching pairs found but we have free tiles - this is a problem!
+    console.warn('No matching pairs found but we have free tiles. Creating emergency pairs...');
+    
+    // Find any type that appears at least twice
+    const emergencyPairs: Array<[MjTileType, MjTileType]> = [];
+    for (let i = 0; i < allTypes.length - 1; i++) {
+      for (let j = i + 1; j < allTypes.length; j++) {
+        if (allTypes[i].matches(allTypes[j])) {
+          emergencyPairs.push([allTypes[i], allTypes[j]]);
+          break;
+        }
+      }
+      if (emergencyPairs.length > 0) break;
+    }
+    
+    if (emergencyPairs.length > 0) {
+      typesToAssign.push(emergencyPairs[0][0], emergencyPairs[0][1]);
+      console.log(`  Created emergency pair: ${emergencyPairs[0][0].group}${emergencyPairs[0][0].index} & ${emergencyPairs[0][1].group}${emergencyPairs[0][1].index}`);
+      
+      // Remove these from allTypes and add the rest
+      const usedTypes = [emergencyPairs[0][0], emergencyPairs[0][1]];
+      allTypes.forEach(type => {
+        if (!usedTypes.includes(type)) {
+          additionalPairs.push(type);
+        }
+      });
     }
   } else {
     // If we can't guarantee pairs on free tiles, add all pairs to pool
@@ -997,9 +1034,12 @@ function shuffleRemainingTiles() {
   let typeIndex = 0;
   
   // Priority 1: Free tiles (guaranteed to get matching pairs)
-  freeTiles.forEach(tile => {
+  console.log(`Assigning types to ${freeTiles.length} free tiles. First types to assign:`, typesToAssign.slice(0, 10).map(t => `${t.group}${t.index}`));
+  freeTiles.forEach((tile, idx) => {
     if (typeIndex < typesToAssign.length) {
+      const oldType = tile.type;
       tile.type = typesToAssign[typeIndex++];
+      console.log(`  Free tile ${idx}: ${oldType?.group}${oldType?.index} -> ${tile.type.group}${tile.type.index}`);
     }
   });
   
@@ -1126,10 +1166,17 @@ function shuffleRemainingTiles() {
     const finalFreeTiles = gameStore.tiles.filter(t => t.active && t.isFree());
     const matchingFreePairs = [];
     
+    // Debug: Log all free tiles and their types
+    console.log('Free tiles after shuffle:');
+    finalFreeTiles.forEach((tile, idx) => {
+      console.log(`  ${idx}: ${tile.type?.group} ${tile.type?.index} at (${tile.x},${tile.y},${tile.z})`);
+    });
+    
     for (let i = 0; i < finalFreeTiles.length - 1; i++) {
       for (let j = i + 1; j < finalFreeTiles.length; j++) {
         if (finalFreeTiles[i].matches(finalFreeTiles[j])) {
           matchingFreePairs.push([finalFreeTiles[i], finalFreeTiles[j]]);
+          console.log(`  Match found: ${finalFreeTiles[i].type?.group}${finalFreeTiles[i].type?.index} <-> ${finalFreeTiles[j].type?.group}${finalFreeTiles[j].type?.index}`);
         }
       }
     }

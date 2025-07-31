@@ -33,7 +33,7 @@ const menuItems = [
   { view: 'game' as ViewType, icon: 'fas fa-gamepad', label: 'Jogar' },
   { view: 'profile' as ViewType, icon: 'fas fa-user', label: 'Perfil' },
   { view: 'achievements' as ViewType, icon: 'fas fa-trophy', label: 'Conquistas' },
-  { view: 'store' as ViewType, icon: 'fas fa-store', label: 'Loja' }
+  { view: 'settings' as ViewType, icon: 'fas fa-cog', label: 'Configurações' }
 ];
 
 const menuClasses = computed(() => [
