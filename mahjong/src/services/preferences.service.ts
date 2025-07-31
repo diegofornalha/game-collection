@@ -18,7 +18,7 @@ class PreferencesService {
     soundEnabled: true,
     musicEnabled: false,
     hintsEnabled: true,
-    animationSpeed: 'normal',
+    animationSpeed: 'slow',
     theme: 'classic',
     tileSet: 'traditional'
   };

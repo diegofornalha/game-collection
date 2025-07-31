@@ -53,46 +53,12 @@
           </button>
         </div>
 
-        <div class="setting-item">
-          <div class="setting-info">
-            <span class="setting-label">Velocidade de Animação</span>
-            <span class="setting-description">Velocidade das animações do jogo</span>
-          </div>
-          <div class="button-group">
-            <button 
-              v-for="speed in animationSpeeds" 
-              :key="speed.value"
-              @click="setAnimationSpeed(speed.value)"
-              :class="['option-button', { active: preferences.animationSpeed === speed.value }]"
-            >
-              {{ speed.label }}
-            </button>
-          </div>
-        </div>
       </section>
 
       <!-- Visual Settings -->
       <section class="settings-section">
         <h2><i class="fas fa-palette"></i> Visual</h2>
         
-        <div class="setting-item">
-          <div class="setting-info">
-            <span class="setting-label">Tema</span>
-            <span class="setting-description">Aparência do jogo</span>
-          </div>
-          <div class="button-group">
-            <button 
-              v-for="theme in themes" 
-              :key="theme.value"
-              @click="setTheme(theme.value)"
-              :class="['option-button', { active: preferences.theme === theme.value }]"
-            >
-              <i :class="theme.icon"></i>
-              {{ theme.label }}
-            </button>
-          </div>
-        </div>
-
         <div class="setting-item">
           <div class="setting-info">
             <span class="setting-label">Conjunto de Peças</span>
@@ -124,23 +90,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useGameStore } from '../../stores/game.store';
-import { preferencesService, type UserPreferences } from '../../services/preferences.service';
+import { useGameStore } from '@/stores/game.store';
+import { preferencesService, type UserPreferences } from '@/services/preferences.service';
 
 const gameStore = useGameStore();
 const preferences = computed(() => gameStore.preferences);
-
-const animationSpeeds = [
-  { value: 'slow', label: 'Lenta' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'fast', label: 'Rápida' }
-] as const;
-
-const themes = [
-  { value: 'classic', label: 'Clássico', icon: 'fas fa-sun' },
-  { value: 'modern', label: 'Moderno', icon: 'fas fa-cube' },
-  { value: 'dark', label: 'Escuro', icon: 'fas fa-moon' }
-] as const;
 
 const tileSets = [
   { value: 'traditional', label: 'Tradicional' },
@@ -158,14 +112,6 @@ async function toggleMusic() {
 
 async function toggleHints() {
   await gameStore.updatePreferences({ hintsEnabled: !preferences.value.hintsEnabled });
-}
-
-async function setAnimationSpeed(speed: UserPreferences['animationSpeed']) {
-  await gameStore.updatePreferences({ animationSpeed: speed });
-}
-
-async function setTheme(theme: UserPreferences['theme']) {
-  await gameStore.updatePreferences({ theme });
 }
 
 async function setTileSet(tileSet: UserPreferences['tileSet']) {

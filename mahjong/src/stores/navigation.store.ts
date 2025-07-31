@@ -28,7 +28,7 @@ export const useNavigationStore = defineStore('navigation', () => {
       game: 'Mahjong',
       profile: 'Perfil',
       settings: 'Configurações',
-      achievements: 'Conquistas'
+      achievements: 'Atalhos'
     };
     return titles[currentView.value];
   });

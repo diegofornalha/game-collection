@@ -32,7 +32,7 @@ const menuItems = [
   { view: 'home' as ViewType, icon: 'fas fa-home', label: 'Início' },
   { view: 'game' as ViewType, icon: 'fas fa-gamepad', label: 'Jogar' },
   { view: 'profile' as ViewType, icon: 'fas fa-user', label: 'Perfil' },
-  { view: 'achievements' as ViewType, icon: 'fas fa-trophy', label: 'Conquistas' },
+  { view: 'achievements' as ViewType, icon: 'fas fa-keyboard', label: 'Atalhos' },
   { view: 'settings' as ViewType, icon: 'fas fa-cog', label: 'Configurações' }
 ];
 

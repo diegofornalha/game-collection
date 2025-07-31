@@ -70,14 +70,11 @@ const headerVariant = computed(() => {
 onMounted(() => {
   setViewportMeta();
   
-  // Load user preferences
-  if (isMobile.value) {
-    // Enable mobile-specific features
-    gameStore.updatePreferences({
-      animationSpeed: 'fast',
-      soundEnabled: true
-    });
-  }
+  // Load user preferences with slow animation for both mobile and desktop
+  gameStore.updatePreferences({
+    animationSpeed: 'slow',
+    soundEnabled: true
+  });
 });
 </script>
 

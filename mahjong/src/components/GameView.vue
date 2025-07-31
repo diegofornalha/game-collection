@@ -81,6 +81,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 import { useDailyStreakStore } from '@/stores/gamification/dailyStreak.store';
 import { useUserProfileStore } from '@/stores/gamification/userProfile.store';
+import { useNavigationStore } from '@/stores/navigation.store';
 import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
@@ -91,6 +92,7 @@ import { storageService } from '@/services/storage.service';
 const gameStore = useGameStore();
 const dailyStreakStore = useDailyStreakStore();
 const userProfileStore = useUserProfileStore();
+const navigationStore = useNavigationStore();
 
 // Component refs
 const tileFieldRef = ref<InstanceType<typeof TileField> | null>(null);
@@ -326,19 +328,93 @@ function onContinueGame() {
 
 // Keyboard shortcuts
 function handleKeyPress(event: KeyboardEvent) {
+  // Don't handle if user is typing in an input field
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return;
+  }
+
+  // Ctrl/Cmd + key combinations
   if (event.ctrlKey || event.metaKey) {
     switch (event.key.toLowerCase()) {
       case 'z':
+        event.preventDefault();
         if (gameStore.canUndo) {
           onUndo();
         }
         break;
       case 'y':
+        event.preventDefault();
         if (gameStore.canRedo) {
           onRedo();
         }
         break;
+      case 'm':
+        event.preventDefault();
+        // Toggle music
+        gameStore.toggleMusic();
+        break;
     }
+    return;
+  }
+
+  // Single key shortcuts
+  switch (event.key.toLowerCase()) {
+    case 'h':
+      event.preventDefault();
+      // Request hint
+      gameStore.requestHint();
+      audioService.play('hint');
+      break;
+    case 'p':
+      event.preventDefault();
+      // Toggle pause
+      if (gameStore.isPaused) {
+        gameStore.resumeGame();
+      } else {
+        gameStore.pauseGame();
+      }
+      break;
+    case 'n':
+      event.preventDefault();
+      // New game
+      showRestartDialog.value = true;
+      break;
+    case 'e':
+      event.preventDefault();
+      // Shuffle remaining tiles
+      shuffleRemainingTiles();
+      break;
+    case 'm':
+      event.preventDefault();
+      // Toggle sound
+      gameStore.toggleSound();
+      break;
+    case 'escape':
+      event.preventDefault();
+      // Go to home menu
+      navigationStore.navigateTo('home');
+      break;
+    case 'f':
+      event.preventDefault();
+      // Toggle fullscreen
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+      break;
+    case '+':
+    case '=':
+      event.preventDefault();
+      // Zoom in - could be implemented later
+      console.log('Zoom in');
+      break;
+    case '-':
+    case '_':
+      event.preventDefault();
+      // Zoom out - could be implemented later
+      console.log('Zoom out');
+      break;
   }
 }
 

@@ -575,6 +575,14 @@ export const useGameStore = defineStore('game', () => {
     };
   }
   
+  // Load preferences on startup
+  function loadPreferences() {
+    preferences.value = preferencesService.getCurrentPreferences();
+  }
+  
+  // Initialize preferences
+  loadPreferences();
+  
   return {
     // State
     tiles,
@@ -601,6 +609,7 @@ export const useGameStore = defineStore('game', () => {
     tokenAnimationTrigger,
     
     // Preferences
+    preferences,
     soundEnabled,
     musicEnabled,
     animationSpeed,
@@ -622,6 +631,7 @@ export const useGameStore = defineStore('game', () => {
     toggleSound,
     toggleMusic,
     updatePreferences,
+    loadPreferences,
     saveGameState,
     clearSavedGame,
     updateChallengeProgress,
