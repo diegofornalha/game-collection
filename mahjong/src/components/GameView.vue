@@ -40,6 +40,9 @@
       <p>Muito bem jogado! Pronto para outra jornada?</p>
     </AppModal>
 
+    <!-- Auto-shuffle notification -->
+    <AutoShuffleNotification />
+
     <div class="game-component">
       <div v-if="!isInMobileView" class="header-section">
         <UserProfileHeader 
@@ -86,6 +89,7 @@ import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
 import UserProfileHeader from './UserProfileHeader.vue';
+import AutoShuffleNotification from './AutoShuffleNotification.vue';
 import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';
 

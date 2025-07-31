@@ -1,3 +1,5 @@
+sempre usar  o claude-flow com subagentes SPARC para implementar de forma segura
+Responda sempre em pt br
 # Claude Code Configuration - SPARC Development Environment (Batchtools Optimized)
 
 ## 🚨 CRITICAL: CONCURRENT EXECUTION FOR ALL ACTIONS

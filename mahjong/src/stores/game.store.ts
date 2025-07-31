@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef, computed } from 'vue';
+import { ref, shallowRef, computed, readonly } from 'vue';
 import { MjTile } from '@/models/tile.model';
 import { GameState, Move } from '@/types/game.types';
 import { preferencesService, UserPreferences } from '@/services/preferences.service';
@@ -132,6 +132,8 @@ export const useGameStore = defineStore('game', () => {
     maxCombo.value = 0;
     currentCombo.value = 0;
     gameStartTime.value = Date.now();
+    autoShuffleCount.value = 0;
+    isAutoShuffling.value = false;
     
     startTimer();
     
@@ -415,6 +417,13 @@ export const useGameStore = defineStore('game', () => {
     }
   }
   
+  // Auto-shuffle settings
+  const autoShuffleEnabled = computed(() => preferences.value.autoShuffleEnabled);
+  const autoShuffleDelay = computed(() => preferences.value.autoShuffleDelay);
+  const isAutoShuffling = ref(false);
+  const autoShuffleCount = ref(0); // Track number of auto-shuffles in current game
+  let autoShuffleTimer: number | null = null;
+  
   function checkGameComplete() {
     const activeTiles = tiles.value.filter(t => t.active);
     
@@ -433,18 +442,110 @@ export const useGameStore = defineStore('game', () => {
     
     // Check if any moves are possible
     const freeTiles = activeTiles.filter(t => t.isFree());
+    let hasValidMoves = false;
+    
     for (let i = 0; i < freeTiles.length; i++) {
       for (let j = i + 1; j < freeTiles.length; j++) {
         if (freeTiles[i].matches(freeTiles[j])) {
-          return; // Game can continue
+          hasValidMoves = true;
+          break;
+        }
+      }
+      if (hasValidMoves) break;
+    }
+    
+    if (hasValidMoves) {
+      // Cancel any pending auto-shuffle
+      if (autoShuffleTimer) {
+        clearTimeout(autoShuffleTimer);
+        autoShuffleTimer = null;
+      }
+      return; // Game can continue
+    }
+    
+    // No moves possible - trigger auto-shuffle if enabled
+    if (autoShuffleEnabled.value && activeTiles.length > 0) {
+      console.log('Sem movimentos válidos detectado. Iniciando auto-shuffle...');
+      
+      // Clear any existing timer
+      if (autoShuffleTimer) {
+        clearTimeout(autoShuffleTimer);
+      }
+      
+      // Mark that we're preparing to auto-shuffle
+      isAutoShuffling.value = true;
+      
+      // Emit event to show notification
+      window.dispatchEvent(new CustomEvent('auto-shuffle-pending', {
+        detail: {
+          delay: autoShuffleDelay.value,
+          canCancel: true
+        }
+      }));
+      
+      // Set a timer to auto-shuffle after delay
+      autoShuffleTimer = window.setTimeout(() => {
+        if (!hasValidMovesCheck() && isAutoShuffling.value) {
+          console.log('Auto-shuffle ativado!');
+          autoShuffleCount.value++;
+          
+          // Track auto-shuffle in challenges
+          const challengesStore = useChallengesStore();
+          const context = getGameContext();
+          context.metadata = { ...context.metadata, autoShuffleUsed: true, autoShuffleCount: autoShuffleCount.value };
+          challengesStore.updateProgress('use-auto-shuffle', context);
+          
+          // Emit event to trigger shuffle in TileField
+          window.dispatchEvent(new CustomEvent('auto-shuffle-execute'));
+        }
+        autoShuffleTimer = null;
+        isAutoShuffling.value = false;
+      }, autoShuffleDelay.value);
+    } else {
+      // Auto-shuffle disabled or no tiles left - game over
+      isGameComplete.value = true;
+      stopTimer();
+      saveGameState(false);
+    }
+  }
+  
+  // Helper function to recheck for valid moves
+  function hasValidMovesCheck(): boolean {
+    const activeTiles = tiles.value.filter(t => t.active);
+    const freeTiles = activeTiles.filter(t => t.isFree());
+    
+    for (let i = 0; i < freeTiles.length; i++) {
+      for (let j = i + 1; j < freeTiles.length; j++) {
+        if (freeTiles[i].matches(freeTiles[j])) {
+          return true;
         }
       }
     }
-    
-    // No moves possible - game over
-    isGameComplete.value = true;
-    stopTimer();
-    saveGameState(false);
+    return false;
+  }
+  
+  // Function to toggle auto-shuffle
+  function setAutoShuffle(enabled: boolean) {
+    autoShuffleEnabled.value = enabled;
+    if (!enabled && autoShuffleTimer) {
+      clearTimeout(autoShuffleTimer);
+      autoShuffleTimer = null;
+    }
+  }
+  
+  // Function to set auto-shuffle delay
+  function setAutoShuffleDelay(delay: number) {
+    autoShuffleDelay.value = Math.max(1000, Math.min(10000, delay)); // Between 1-10 seconds
+  }
+  
+  // Function to cancel pending auto-shuffle
+  function cancelAutoShuffle() {
+    if (autoShuffleTimer) {
+      clearTimeout(autoShuffleTimer);
+      autoShuffleTimer = null;
+    }
+    isAutoShuffling.value = false;
+    console.log('Auto-shuffle cancelado');
   }
   
   async function saveCurrentGame() {
@@ -530,6 +631,14 @@ export const useGameStore = defineStore('game', () => {
   // Preferences
   async function updatePreferences(updates: Partial<UserPreferences>) {
     preferences.value = await preferencesService.updatePreferences(updates);
+    
+    // Sync auto-shuffle settings if they were updated
+    if ('autoShuffleEnabled' in updates) {
+      autoShuffleEnabled.value = preferences.value.autoShuffleEnabled;
+    }
+    if ('autoShuffleDelay' in updates) {
+      autoShuffleDelay.value = preferences.value.autoShuffleDelay;
+    }
   }
   
   function toggleSound() {
@@ -578,6 +687,9 @@ export const useGameStore = defineStore('game', () => {
   // Load preferences on startup
   function loadPreferences() {
     preferences.value = preferencesService.getCurrentPreferences();
+    // Sync auto-shuffle settings with preferences
+    autoShuffleEnabled.value = preferences.value.autoShuffleEnabled;
+    autoShuffleDelay.value = preferences.value.autoShuffleDelay;
   }
   
   // Initialize preferences
@@ -635,6 +747,16 @@ export const useGameStore = defineStore('game', () => {
     saveGameState,
     clearSavedGame,
     updateChallengeProgress,
-    getGameContext
+    getGameContext,
+    
+    // Auto-shuffle functions
+    autoShuffleEnabled: readonly(autoShuffleEnabled),
+    autoShuffleDelay: readonly(autoShuffleDelay),
+    isAutoShuffling: readonly(isAutoShuffling),
+    autoShuffleCount: readonly(autoShuffleCount),
+    setAutoShuffle,
+    setAutoShuffleDelay,
+    cancelAutoShuffle,
+    hasValidMovesCheck
   };
 });

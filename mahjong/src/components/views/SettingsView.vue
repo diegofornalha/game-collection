@@ -53,6 +53,36 @@
           </button>
         </div>
 
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">Embaralhamento Automático</span>
+            <span class="setting-description">Embaralhar quando não houver movimentos</span>
+          </div>
+          <button 
+            @click="toggleAutoShuffle" 
+            :class="['toggle-button', { active: preferences.autoShuffleEnabled }]"
+          >
+            <i :class="preferences.autoShuffleEnabled ? 'fas fa-shuffle' : 'fas fa-ban'"></i>
+          </button>
+        </div>
+
+        <div v-if="preferences.autoShuffleEnabled" class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">Tempo de Espera</span>
+            <span class="setting-description">{{ formattedAutoShuffleDelay }} antes de embaralhar</span>
+          </div>
+          <div class="delay-buttons">
+            <button 
+              v-for="delay in autoShuffleDelays" 
+              :key="delay.value"
+              @click="setAutoShuffleDelay(delay.value)"
+              :class="['delay-button', { active: preferences.autoShuffleDelay === delay.value }]"
+            >
+              {{ delay.label }}
+            </button>
+          </div>
+        </div>
+
       </section>
 
       <!-- Visual Settings -->
@@ -102,6 +132,19 @@ const tileSets = [
   { value: 'colorful', label: 'Colorido' }
 ] as const;
 
+const autoShuffleDelays = [
+  { value: 1000, label: '1s' },
+  { value: 2000, label: '2s' },
+  { value: 3000, label: '3s' },
+  { value: 5000, label: '5s' },
+  { value: 10000, label: '10s' }
+];
+
+const formattedAutoShuffleDelay = computed(() => {
+  const seconds = preferences.value.autoShuffleDelay / 1000;
+  return `${seconds} segundo${seconds !== 1 ? 's' : ''}`;
+});
+
 async function toggleSound() {
   await gameStore.updatePreferences({ soundEnabled: !preferences.value.soundEnabled });
 }
@@ -116,6 +159,14 @@ async function toggleHints() {
 
 async function setTileSet(tileSet: UserPreferences['tileSet']) {
   await gameStore.updatePreferences({ tileSet });
+}
+
+async function toggleAutoShuffle() {
+  await gameStore.updatePreferences({ autoShuffleEnabled: !preferences.value.autoShuffleEnabled });
+}
+
+async function setAutoShuffleDelay(delay: number) {
+  await gameStore.updatePreferences({ autoShuffleDelay: delay });
 }
 
 async function resetSettings() {
@@ -299,6 +350,40 @@ async function resetSettings() {
   padding: 0;
 }
 
+.delay-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.delay-button {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  min-width: 50px;
+  text-align: center;
+}
+
+.delay-button:hover {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+
+.delay-button:active {
+  transform: translateY(0);
+}
+
+.delay-button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .settings-view {
@@ -325,6 +410,16 @@ async function resetSettings() {
   .toggle-button {
     align-self: flex-end;
   }
+  
+  .delay-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .delay-button {
+    flex: 1;
+    min-width: 45px;
+  }
 }
 
 /* FontAwesome icon fixes for slash icons */
@@ -338,5 +433,13 @@ async function resetSettings() {
 
 .fa-lightbulb-slash::before {
   content: "\f673";
+}
+
+.fa-shuffle::before {
+  content: "\f074";
+}
+
+.fa-ban::before {
+  content: "\f05e";
 }
 </style>

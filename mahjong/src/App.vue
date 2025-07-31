@@ -12,11 +12,13 @@
     
     <!-- Navigation Menu (Mobile only) -->
     <NavigationMenu v-if="isMobile" variant="bottom" />
+    
+    <!-- Auto-shuffle notification will be added to GameView directly -->
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, provide } from 'vue';
+import { computed, onMounted, provide, ref } from 'vue';
 import ViewContainer from './components/ViewContainer.vue';
 import NavigationMenu from './components/NavigationMenu.vue';
 import UserProfileHeader from './components/UserProfileHeader.vue';
@@ -36,6 +38,8 @@ const {
 // Stores
 const gameStore = useGameStore();
 const navigationStore = useNavigationStore();
+
+// Refs
 
 // Provide mobile context globally
 provide('isMobile', isMobile);
@@ -66,14 +70,14 @@ const headerVariant = computed(() => {
   return 'default';
 });
 
+
 // Initialize mobile settings
 onMounted(() => {
   setViewportMeta();
   
   // Load user preferences with slow animation for both mobile and desktop
   gameStore.updatePreferences({
-    animationSpeed: 'slow',
-    soundEnabled: true
+    animationSpeed: 'slow'
   });
 });
 </script>

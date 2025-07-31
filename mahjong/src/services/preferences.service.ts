@@ -8,6 +8,8 @@ export interface UserPreferences {
   animationSpeed: 'slow' | 'normal' | 'fast';
   theme: 'classic' | 'modern' | 'dark';
   tileSet: 'traditional' | 'simple' | 'colorful';
+  autoShuffleEnabled: boolean;
+  autoShuffleDelay: number;
 }
 
 class PreferencesService {
@@ -15,12 +17,14 @@ class PreferencesService {
   private readonly PREFS_STORE = 'preferences';
   
   private defaultPreferences: UserPreferences = {
-    soundEnabled: true,
+    soundEnabled: false,
     musicEnabled: false,
     hintsEnabled: true,
     animationSpeed: 'slow',
     theme: 'classic',
-    tileSet: 'traditional'
+    tileSet: 'colorful',
+    autoShuffleEnabled: true,
+    autoShuffleDelay: 3000
   };
 
   private preferences: Ref<UserPreferences>;

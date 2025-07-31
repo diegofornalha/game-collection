@@ -1,0 +1,306 @@
+<template>
+  <Transition name="notification">
+    <div v-if="isVisible" class="auto-shuffle-notification">
+      <div class="notification-content">
+        <div class="notification-icon">
+          <span class="icon-shuffle">🔀</span>
+        </div>
+        
+        <div class="notification-message">
+          <h3>{{ texts.title }}</h3>
+          <p>{{ texts.message }}</p>
+          
+          <div class="countdown-wrapper">
+            <div class="countdown-progress" :style="{ width: progressWidth }"></div>
+            <span class="countdown-text">{{ countdownText }}</span>
+          </div>
+        </div>
+        
+        <div class="notification-actions">
+          <button 
+            class="btn-cancel"
+            @click="handleCancel"
+            :aria-label="texts.cancel"
+          >
+            {{ texts.cancel }}
+          </button>
+          
+          <button 
+            class="btn-shuffle"
+            @click="handleShuffleNow"
+            :aria-label="texts.shuffleNow"
+          >
+            {{ texts.shuffleNow }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useGameStore } from '@/stores/game.store';
+
+const gameStore = useGameStore();
+
+// Textos em português
+const texts = {
+  title: 'Sem Movimentos Disponíveis',
+  message: 'As peças serão reorganizadas automaticamente para criar novas combinações.',
+  cancel: 'Cancelar',
+  shuffleNow: 'Embaralhar Agora'
+};
+
+const isVisible = ref(false);
+const totalDelay = ref(3000);
+const remainingTime = ref(3000);
+let countdownInterval: number | null = null;
+let hideTimeout: number | null = null;
+
+const progressWidth = computed(() => {
+  const percentage = (remainingTime.value / totalDelay.value) * 100;
+  return `${percentage}%`;
+});
+
+const countdownText = computed(() => {
+  const seconds = Math.ceil(remainingTime.value / 1000);
+  return `${seconds}s`;
+});
+
+function showNotification(delay: number) {
+  // Clear any existing timers
+  clearTimers();
+  
+  // Set up the countdown
+  isVisible.value = true;
+  totalDelay.value = delay;
+  remainingTime.value = delay;
+  
+  // Start countdown interval
+  countdownInterval = window.setInterval(() => {
+    remainingTime.value -= 100;
+    
+    if (remainingTime.value <= 0) {
+      hideNotification();
+    }
+  }, 100);
+}
+
+function hideNotification() {
+  clearTimers();
+  isVisible.value = false;
+}
+
+function clearTimers() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  
+  if (hideTimeout) {
+    clearTimeout(hideTimeout);
+    hideTimeout = null;
+  }
+}
+
+function handleCancel() {
+  gameStore.cancelAutoShuffle();
+  hideNotification();
+}
+
+function handleShuffleNow() {
+  gameStore.cancelAutoShuffle();
+  hideNotification();
+  
+  // Trigger immediate shuffle
+  window.dispatchEvent(new CustomEvent('auto-shuffle-execute'));
+}
+
+function handleAutoShufflePending(event: CustomEvent) {
+  const { delay = 3000 } = event.detail || {};
+  showNotification(delay);
+}
+
+function handleAutoShuffleExecute() {
+  hideNotification();
+}
+
+onMounted(() => {
+  window.addEventListener('auto-shuffle-pending', handleAutoShufflePending as EventListener);
+  window.addEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
+});
+
+onUnmounted(() => {
+  clearTimers();
+  window.removeEventListener('auto-shuffle-pending', handleAutoShufflePending as EventListener);
+  window.removeEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
+});
+</script>
+
+<style scoped>
+.auto-shuffle-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.95);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.notification-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  color: #fff;
+  text-align: center;
+}
+
+.notification-icon {
+  font-size: 48px;
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notification-message h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #FFD700;
+}
+
+.notification-message p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.countdown-wrapper {
+  position: relative;
+  width: 200px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.countdown-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #FFA500);
+  border-radius: 16px;
+  transition: width 0.1s linear;
+}
+
+.countdown-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.notification-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.notification-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-shuffle {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+}
+
+.btn-shuffle:hover {
+  background: linear-gradient(135deg, #FFA500, #FF8C00);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.4);
+}
+
+/* Transition animations */
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s ease;
+}
+
+.notification-enter-from {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+.notification-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  .auto-shuffle-notification {
+    min-width: 280px;
+    padding: 20px;
+  }
+  
+  .notification-icon {
+    font-size: 36px;
+  }
+  
+  .notification-message h3 {
+    font-size: 18px;
+  }
+  
+  .countdown-wrapper {
+    width: 160px;
+    height: 28px;
+  }
+  
+  .notification-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .notification-actions button {
+    width: 100%;
+  }
+}
+</style>

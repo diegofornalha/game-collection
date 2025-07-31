@@ -6,6 +6,8 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "type-check": "vue-tsc --noEmit"
   },
@@ -24,6 +26,7 @@
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^9.17.0",
     "eslint-plugin-vue": "^9.32.0",
+    "jsdom": "^26.1.0",
     "sass": "^1.83.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",

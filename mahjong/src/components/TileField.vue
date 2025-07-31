@@ -256,9 +256,16 @@ function isMobileScreen(): boolean {
 }
 
 // Initialize component
+// Auto-shuffle event handler
+function handleAutoShuffleExecute() {
+  console.log('Auto-shuffle triggered by event');
+  shuffleRemainingTiles();
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
   
   // Only calculate dimensions, don't initialize game
   nextTick(() => {
@@ -269,6 +276,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
   if (resizeTimeout) {
     clearTimeout(resizeTimeout);
   }
@@ -1001,24 +1009,53 @@ function shuffleRemainingTiles() {
   const finalAssignment: MjTileType[] = [];
   let pairIndex = 0;
   
+  // Check if we're in endgame (few tiles remaining)
+  const isEndgame = activeTiles.length <= 10;
+  
   // For each layer from top to bottom
-  sortedLayers.forEach(layer => {
+  sortedLayers.forEach((layer, layerIndex) => {
     const layerTiles = tilesByLayer.get(layer)!;
     const layerTypes: MjTileType[] = [];
     
-    // Calculate how many pairs this layer should get
-    const pairsForLayer = Math.ceil(layerTiles.length / 2);
-    
-    // Assign pairs to this layer
-    for (let i = 0; i < pairsForLayer && pairIndex < typePairs.length; i++) {
-      const [type1, type2] = typePairs[pairIndex++];
-      layerTypes.push(type1, type2);
+    // Special handling for endgame - ensure pairs aren't blocked
+    if (isEndgame && layerIndex === sortedLayers.length - 1) {
+      // This is the bottom layer in endgame
+      // Try to place matching pairs in non-blocking positions
+      const freeTilesInLayer = layerTiles.filter(t => t.isFree());
+      const blockedTilesInLayer = layerTiles.filter(t => !t.isFree());
+      
+      // If we have pairs, prioritize placing them on free tiles
+      if (pairIndex < typePairs.length && freeTilesInLayer.length >= 2) {
+        const [type1, type2] = typePairs[pairIndex++];
+        layerTypes.push(type1, type2);
+        
+        // Add more types if needed
+        while (layerTypes.length < layerTiles.length && pairIndex < typePairs.length) {
+          const [t1, t2] = typePairs[pairIndex++];
+          layerTypes.push(t1, t2);
+        }
+      }
+    } else {
+      // Normal layer handling
+      const pairsForLayer = Math.ceil(layerTiles.length / 2);
+      
+      // Assign pairs to this layer
+      for (let i = 0; i < pairsForLayer && pairIndex < typePairs.length; i++) {
+        const [type1, type2] = typePairs[pairIndex++];
+        layerTypes.push(type1, type2);
+      }
     }
     
-    // Shuffle within layer for randomness
-    for (let i = layerTypes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [layerTypes[i], layerTypes[j]] = [layerTypes[j], layerTypes[i]];
+    // Smart shuffle: if endgame, keep pairs together
+    if (isEndgame && layerTypes.length >= 2) {
+      // Don't shuffle pairs in endgame, keep them adjacent
+      // This ensures they can be cleared without blocking each other
+    } else {
+      // Normal shuffle for variety
+      for (let i = layerTypes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [layerTypes[i], layerTypes[j]] = [layerTypes[j], layerTypes[i]];
+      }
     }
     
     // Add to final assignment
@@ -1036,22 +1073,92 @@ function shuffleRemainingTiles() {
   
   // Assign types to tiles in layer order
   let typeIndex = 0;
-  sortedLayers.forEach(layer => {
-    const layerTiles = tilesByLayer.get(layer)!;
+  
+  // Special handling for endgame to avoid blocking situations
+  if (isEndgame && activeTiles.length <= 6) {
+    console.log('Endgame detected - using smart assignment to prevent blocking');
     
-    // Sort tiles within layer to assign systematically
-    layerTiles.sort((a, b) => {
-      // First by y position, then by x
-      if (a.y !== b.y) return a.y - b.y;
-      return a.x - b.x;
-    });
+    // Group tiles by their blocking relationships
+    const freeTiles = activeTiles.filter(t => t.isFree());
+    const blockedTiles = activeTiles.filter(t => !t.isFree());
     
-    layerTiles.forEach(tile => {
-      if (typeIndex < finalAssignment.length) {
-        tile.type = finalAssignment[typeIndex++];
+    // First, assign types to free tiles (they should get pairs)
+    let assignmentIndex = 0;
+    freeTiles.forEach(tile => {
+      if (assignmentIndex < finalAssignment.length) {
+        tile.type = finalAssignment[assignmentIndex++];
       }
     });
-  });
+    
+    // Then assign to blocked tiles
+    blockedTiles.forEach(tile => {
+      if (assignmentIndex < finalAssignment.length) {
+        tile.type = finalAssignment[assignmentIndex++];
+      }
+    });
+    
+    // Verify no blocking situation for the last pair
+    if (activeTiles.length === 3) {
+      // Special case: 3 tiles left, ensure the pair can be cleared
+      const types = activeTiles.map(t => t.type);
+      const typeCount = new Map<string, number>();
+      
+      types.forEach(type => {
+        if (type) {
+          const key = type.matchAny ? `${type.group}-any` : `${type.group}-${type.index}`;
+          typeCount.set(key, (typeCount.get(key) || 0) + 1);
+        }
+      });
+      
+      // Find which type has 2 occurrences (the pair)
+      let pairType: string | null = null;
+      typeCount.forEach((count, key) => {
+        if (count === 2) pairType = key;
+      });
+      
+      if (pairType) {
+        // Ensure the pair tiles are both free or will become free
+        const pairTiles = activeTiles.filter(t => {
+          if (!t.type) return false;
+          const key = t.type.matchAny ? `${t.type.group}-any` : `${t.type.group}-${t.type.index}`;
+          return key === pairType;
+        });
+        
+        if (pairTiles.length === 2) {
+          const bothFree = pairTiles.every(t => t.isFree());
+          if (!bothFree) {
+            console.log('Adjusting endgame layout to prevent blocking');
+            // Swap types to ensure the pair can be cleared
+            const freeTile = activeTiles.find(t => t.isFree() && !pairTiles.includes(t));
+            if (freeTile && pairTiles[0] && !pairTiles[0].isFree()) {
+              // Swap types
+              const temp = freeTile.type;
+              freeTile.type = pairTiles[0].type;
+              pairTiles[0].type = temp;
+            }
+          }
+        }
+      }
+    }
+  } else {
+    // Normal assignment for non-endgame
+    sortedLayers.forEach(layer => {
+      const layerTiles = tilesByLayer.get(layer)!;
+      
+      // Sort tiles within layer to assign systematically
+      layerTiles.sort((a, b) => {
+        // First by y position, then by x
+        if (a.y !== b.y) return a.y - b.y;
+        return a.x - b.x;
+      });
+      
+      layerTiles.forEach(tile => {
+        if (typeIndex < finalAssignment.length) {
+          tile.type = finalAssignment[typeIndex++];
+        }
+      });
+    });
+  }
   
   // Force Vue to update
   gameStore.tiles = [...gameStore.tiles];
