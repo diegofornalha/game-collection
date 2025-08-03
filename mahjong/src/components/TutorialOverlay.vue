@@ -324,6 +324,7 @@ onUnmounted(() => {
   max-width: 480px;
   width: calc(100% - 40px);
   animation: slideIn 0.3s ease-out;
+  z-index: 1000001;
   
   h3 {
     margin: 0 0 12px 0;

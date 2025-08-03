@@ -42,9 +42,6 @@
 
     <!-- Auto-shuffle notification -->
     <AutoShuffleNotification />
-    
-    <!-- Tutorial overlay -->
-    <TutorialOverlay />
 
     <div class="game-component">
       <div v-if="!isInMobileView" class="header-section">
