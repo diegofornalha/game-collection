@@ -42,6 +42,9 @@
 
     <!-- Auto-shuffle notification -->
     <AutoShuffleNotification />
+    
+    <!-- Tutorial overlay -->
+    <TutorialOverlay />
 
     <div class="game-component">
       <div v-if="!isInMobileView" class="header-section">
@@ -90,6 +93,7 @@ import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
 import UserProfileHeader from './UserProfileHeader.vue';
 import AutoShuffleNotification from './AutoShuffleNotification.vue';
+import TutorialOverlay from './TutorialOverlay.vue';
 import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';
 
@@ -422,6 +426,15 @@ function handleKeyPress(event: KeyboardEvent) {
   }
 }
 
+// Debounce helper
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: number | null = null;
+  return ((...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = window.setTimeout(() => func(...args), wait);
+  }) as T;
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyPress);
   
@@ -430,8 +443,11 @@ onMounted(async () => {
     isInMobileView.value = window.matchMedia('(max-width: 768px)').matches;
   };
   
+  // Debounced resize handler (200ms delay)
+  const debouncedCheckMobile = debounce(checkMobile, 200);
+  
   checkMobile();
-  window.addEventListener('resize', checkMobile);
+  window.addEventListener('resize', debouncedCheckMobile);
   
   // Check for saved game
   try {
@@ -457,7 +473,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyPress);
-  window.removeEventListener('resize', () => {});
+  // Store cleanup will be handled by stores themselves
+  gameStore.cleanup();
 });
 </script>
 

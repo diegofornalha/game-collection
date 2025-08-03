@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { MjTile, MjTileType } from '@/models/tile.model';
 
 /**
@@ -296,8 +296,11 @@ describe('Shuffle Algorithm Core Functions', () => {
       });
       
       expect(bestRecoveryType).not.toBeNull();
-      expect(bestRecoveryType?.group).toBe('num');
-      expect(bestRecoveryType?.index).toBe(1);
+      expect(bestRecoveryType).toBeDefined();
+      if (bestRecoveryType) {
+        expect(bestRecoveryType.group).toBe('num');
+        expect(bestRecoveryType.index).toBe(1);
+      }
     });
     
     it('should handle edge case with only one free tile', () => {

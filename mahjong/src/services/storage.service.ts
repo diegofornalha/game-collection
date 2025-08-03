@@ -9,7 +9,7 @@ export class StorageService {
   }
 
   // LocalStorage compatibility methods
-  setItem(key: string, value: any): void {
+  setItem(key: string, value: unknown): void {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
@@ -17,10 +17,10 @@ export class StorageService {
     }
   }
 
-  getItem(key: string): any {
+  getItem<T = unknown>(key: string): T | null {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
+      return item ? JSON.parse(item) as T : null;
     } catch (error) {
       console.error('Failed to read from localStorage:', error);
       return null;
@@ -44,13 +44,13 @@ export class StorageService {
         reject(new Error('Failed to open IndexedDB'));
       };
 
-      request.onsuccess = (event: any) => {
-        this.db = event.target.result;
+      request.onsuccess = (event: Event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
         resolve(true);
       };
 
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result as IDBDatabase;
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db = (event.target as IDBOpenDBRequest).result;
         this.db = db;
 
         // Create object stores
@@ -79,7 +79,7 @@ export class StorageService {
     });
   }
 
-  public async save(storeName: string, data: any): Promise<any> {
+  public async save<T = unknown>(storeName: string, data: T): Promise<IDBValidKey> {
     await this.dbReadyPromise;
     
     if (!this.db) {
@@ -101,7 +101,7 @@ export class StorageService {
     });
   }
 
-  public async get(storeName: string, key: any): Promise<any> {
+  public async get<T = unknown>(storeName: string, key: IDBValidKey): Promise<T | undefined> {
     await this.dbReadyPromise;
     
     if (!this.db) {
@@ -123,7 +123,7 @@ export class StorageService {
     });
   }
 
-  public async getAll(storeName: string): Promise<any[]> {
+  public async getAll<T = unknown>(storeName: string): Promise<T[]> {
     await this.dbReadyPromise;
     
     if (!this.db) {
@@ -145,7 +145,7 @@ export class StorageService {
     });
   }
 
-  public async delete(storeName: string, key: any): Promise<void> {
+  public async delete(storeName: string, key: IDBValidKey): Promise<void> {
     await this.dbReadyPromise;
     
     if (!this.db) {
@@ -167,7 +167,7 @@ export class StorageService {
     });
   }
 
-  public async query(storeName: string, indexName: string, query: IDBKeyRange): Promise<any[]> {
+  public async query<T = unknown>(storeName: string, indexName: string, query: IDBKeyRange): Promise<T[]> {
     await this.dbReadyPromise;
     
     if (!this.db) {

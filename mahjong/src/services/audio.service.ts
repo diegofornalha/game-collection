@@ -14,6 +14,8 @@ class AudioService {
   private soundData: SoundData = {};
   private loadedSounds: Set<string> = new Set();
   private audioCache: Map<string, HTMLAudioElement[]> = new Map();
+  private audioPool: Map<string, HTMLAudioElement[]> = new Map();
+  private maxPoolSize = 10; // Máximo de 10 clones por som
   private soundCount = 0;
   private loadedSoundsCount = 0;
 
@@ -101,12 +103,45 @@ class AudioService {
 
     const playSound = () => {
       try {
-        // Clone the audio element to allow multiple simultaneous plays
-        const audioClone = audio.cloneNode() as HTMLAudioElement;
-        audioClone.loop = repeat;
-        audioClone.play().catch(err => {
-          console.warn('Failed to play sound:', err);
-        });
+        // Use audio pool to prevent infinite cloning
+        const poolKey = `${soundGroupId}_${soundIndex}`;
+        let pool = this.audioPool.get(poolKey);
+        
+        if (!pool) {
+          pool = [];
+          this.audioPool.set(poolKey, pool);
+        }
+        
+        // Find an available audio element in the pool
+        let audioToPlay: HTMLAudioElement | null = null;
+        
+        for (const pooledAudio of pool) {
+          if (pooledAudio.paused || pooledAudio.ended) {
+            audioToPlay = pooledAudio;
+            break;
+          }
+        }
+        
+        // If no available audio in pool and pool not full, create new one
+        if (!audioToPlay && pool.length < this.maxPoolSize) {
+          audioToPlay = audio.cloneNode() as HTMLAudioElement;
+          pool.push(audioToPlay);
+        }
+        
+        // If still no audio available, reuse the oldest one
+        if (!audioToPlay && pool.length > 0) {
+          audioToPlay = pool[0];
+          audioToPlay.pause();
+          audioToPlay.currentTime = 0;
+        }
+        
+        // Play the audio if we have one
+        if (audioToPlay) {
+          audioToPlay.loop = repeat;
+          audioToPlay.play().catch(err => {
+            console.warn('Failed to play sound:', err);
+          });
+        }
       } catch (err) {
         console.warn('Error playing sound:', err);
       }
@@ -120,6 +155,7 @@ class AudioService {
   }
 
   public stopAll(): void {
+    // Stop all cached sounds
     this.audioCache.forEach(sounds => {
       sounds.forEach(audio => {
         if (audio) {
@@ -128,6 +164,24 @@ class AudioService {
         }
       });
     });
+    
+    // Stop all pooled sounds
+    this.audioPool.forEach(pool => {
+      pool.forEach(audio => {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+    });
+  }
+  
+  public cleanup(): void {
+    this.stopAll();
+    this.audioCache.clear();
+    this.audioPool.clear();
+    this.loadedSounds.clear();
+    this.soundsReady.value = false;
   }
 }
 

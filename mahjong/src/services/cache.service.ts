@@ -1,11 +1,11 @@
-interface CacheEntry {
-  data: any;
+interface CacheEntry<T = unknown> {
+  data: T;
   expiry: number;
 }
 
 export class CacheService {
-  private cache = new Map<string, CacheEntry>();
-  private inFlightPromises = new Map<string, Promise<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private inFlightPromises = new Map<string, Promise<unknown>>();
   private cleanupInterval: number;
 
   constructor() {
@@ -20,12 +20,12 @@ export class CacheService {
   ): Promise<T> {
     // Check if we have a valid cached value
     if (this.has(key)) {
-      return this.getCached(key);
+      return this.getCached(key) as T;
     }
 
     // Check if the same request is already in flight
     if (this.inFlightPromises.has(key)) {
-      return this.inFlightPromises.get(key)!;
+      return this.inFlightPromises.get(key) as Promise<T>;
     }
 
     // Create new request and cache it
@@ -44,9 +44,9 @@ export class CacheService {
     return promise;
   }
 
-  public set(key: string, data: any, ttl: number = 60000): void {
+  public set<T = unknown>(key: string, data: T, ttl: number = 60000): void {
     const expiry = Date.now() + ttl;
-    this.cache.set(key, { data, expiry });
+    this.cache.set(key, { data: data as unknown, expiry });
   }
 
   public has(key: string): boolean {
@@ -61,9 +61,9 @@ export class CacheService {
     return true;
   }
 
-  public getCached(key: string): any {
+  public getCached<T = unknown>(key: string): T | null {
     const entry = this.cache.get(key);
-    return entry ? entry.data : null;
+    return entry ? entry.data as T : null;
   }
 
   public delete(key: string): void {
