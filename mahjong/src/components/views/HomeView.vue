@@ -23,7 +23,7 @@
       </div>
       
       <div class="stat-card">
-        <i class="fas fa-coins"></i>
+        <i class="fas fa-trophy"></i>
         <div class="stat-content">
           <span class="stat-value">{{ userStore.tokens }}</span>
           <span class="stat-label">Tokens</span>
