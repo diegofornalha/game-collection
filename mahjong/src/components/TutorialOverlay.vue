@@ -294,7 +294,7 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   pointer-events: auto;
-  z-index: 10;
+  z-index: 1000000;
   
   .step-dot {
     width: 10px;
