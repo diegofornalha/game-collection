@@ -76,6 +76,9 @@
         />
       </div>
     </div>
+    
+    <!-- Tutorial overlay - rendered last to ensure it's on top -->
+    <TutorialOverlay />
   </div>
 </template>
 
