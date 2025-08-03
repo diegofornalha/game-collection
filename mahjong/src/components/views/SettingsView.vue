@@ -22,18 +22,6 @@
           </button>
         </div>
 
-        <div class="setting-item">
-          <div class="setting-info">
-            <span class="setting-label">Música de Fundo</span>
-            <span class="setting-description">Música ambiente relaxante</span>
-          </div>
-          <button 
-            @click="toggleMusic" 
-            :class="['toggle-button', { active: preferences.musicEnabled }]"
-          >
-            <i :class="preferences.musicEnabled ? 'fas fa-music' : 'fas fa-music-slash'"></i>
-          </button>
-        </div>
       </section>
 
       <!-- Game Settings -->
@@ -147,10 +135,6 @@ const formattedAutoShuffleDelay = computed(() => {
 
 async function toggleSound() {
   await gameStore.updatePreferences({ soundEnabled: !preferences.value.soundEnabled });
-}
-
-async function toggleMusic() {
-  await gameStore.updatePreferences({ musicEnabled: !preferences.value.musicEnabled });
 }
 
 async function toggleHints() {
@@ -425,10 +409,6 @@ async function resetSettings() {
 /* FontAwesome icon fixes for slash icons */
 .fa-volume-mute::before {
   content: "\f6a9";
-}
-
-.fa-music-slash::before {
-  content: "\f8d1";
 }
 
 .fa-lightbulb-slash::before {

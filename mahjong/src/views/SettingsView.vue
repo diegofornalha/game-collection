@@ -9,12 +9,6 @@
         </label>
       </div>
       <div class="setting-item">
-        <label>
-          <input type="checkbox" v-model="musicEnabled" @change="toggleMusic">
-          Música de Fundo
-        </label>
-      </div>
-      <div class="setting-item">
         <label>Velocidade da Animação</label>
         <select v-model="animationSpeed" @change="updateAnimationSpeed">
           <option value="slow">Lenta</option>
@@ -37,11 +31,6 @@ const soundEnabled = computed({
   set: (value) => preferencesStore.updatePreferences({ soundEnabled: value })
 });
 
-const musicEnabled = computed({
-  get: () => preferencesStore.musicEnabled,
-  set: (value) => preferencesStore.updatePreferences({ musicEnabled: value })
-});
-
 const animationSpeed = computed({
   get: () => preferencesStore.animationSpeed,
   set: (value) => preferencesStore.setAnimationSpeed(value as 'slow' | 'normal' | 'fast')
@@ -49,10 +38,6 @@ const animationSpeed = computed({
 
 function toggleSound() {
   preferencesStore.toggleSound();
-}
-
-function toggleMusic() {
-  preferencesStore.toggleMusic();
 }
 
 function updateAnimationSpeed() {

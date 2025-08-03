@@ -69,11 +69,6 @@ export function useGameKeyboard() {
       action: () => preferencesStore.toggleSound()
     },
     {
-      key: 'm',
-      description: 'Alternar música',
-      action: () => preferencesStore.toggleMusic()
-    },
-    {
       key: 'Escape',
       description: 'Limpar seleção',
       action: () => {

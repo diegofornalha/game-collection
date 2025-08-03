@@ -139,7 +139,7 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     title: 'Atalhos de Teclado',
-    description: 'H - Dica | Ctrl+Z - Desfazer | Ctrl+Y - Refazer | P - Pausar | N - Novo Jogo | M - Som/Música',
+    description: 'H - Dica | Ctrl+Z - Desfazer | Ctrl+Y - Refazer | P - Pausar | N - Novo Jogo | S - Som',
     position: { x: 'center', y: 'center' }
   },
   {
