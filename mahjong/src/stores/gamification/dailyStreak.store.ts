@@ -235,6 +235,17 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24))
   }
 
+  function markGameCompleted() {
+    // Atualiza a data da última visita quando um jogo é completado
+    updateVisit()
+    
+    // Se a ofensiva ainda não foi iniciada hoje, inicia ou continua
+    checkAndUpdateStreak()
+    
+    // Salva o estado
+    saveStreak()
+  }
+
   function resetStreak() {
     streakData.value = {
       currentStreak: 0,
@@ -269,6 +280,7 @@ export const useDailyStreakStore = defineStore('dailyStreak', () => {
     checkAndUpdateStreak,
     activateVacationMode,
     deactivateVacationMode,
+    markGameCompleted,
     resetStreak
   }
 })

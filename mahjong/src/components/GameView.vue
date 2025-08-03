@@ -37,6 +37,20 @@
       <h1>🎉 Parabéns!</h1>
       <p>Você removeu todas as peças com sucesso!</p>
       <p><strong>Sua pontuação final: {{ gameStore.score }}</strong></p>
+      
+      <!-- Ofensiva concluída -->
+      <div v-if="dailyStreakStore.isStreakActive" style="margin: 15px 0; padding: 10px; background: rgba(255, 200, 0, 0.1); border-radius: 8px; border: 2px solid #FFC000;">
+        <p style="margin: 5px 0; color: #FFA500;">
+          <strong>🔥 Ofensiva Diária Concluída! 🔥</strong>
+        </p>
+        <p style="margin: 5px 0;">
+          Ofensiva atual: <strong>{{ dailyStreakStore.streakData.currentStreak }} {{ dailyStreakStore.streakData.currentStreak === 1 ? 'dia' : 'dias' }}</strong>
+        </p>
+        <p v-if="dailyStreakStore.nextReward" style="margin: 5px 0; font-size: 0.9em;">
+          Próxima recompensa em {{ dailyStreakStore.daysUntilNextReward }} {{ dailyStreakStore.daysUntilNextReward === 1 ? 'dia' : 'dias' }}
+        </p>
+      </div>
+      
       <p>Muito bem jogado! Pronto para outra jornada?</p>
     </AppModal>
 
@@ -295,6 +309,9 @@ function onTileCleared() {
       // Win
       showWinModal.value = true;
       audioService.play('win');
+      
+      // Marcar jogo como completado para a ofensiva diária
+      dailyStreakStore.markGameCompleted();
       
       // Recompensar com tokens bonus por completar o jogo durante streak
       if (dailyStreakStore.isStreakActive) {
