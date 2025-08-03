@@ -54,8 +54,7 @@
       <p>Muito bem jogado! Pronto para outra jornada?</p>
     </AppModal>
 
-    <!-- Auto-shuffle notification -->
-    <AutoShuffleNotification />
+    <!-- Auto-shuffle notification removed - now instant shuffle -->
 
     <div class="game-component">
       <div v-if="!isInMobileView" class="header-section">
@@ -106,7 +105,7 @@ import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
 import UserProfileHeader from './UserProfileHeader.vue';
-import AutoShuffleNotification from './AutoShuffleNotification.vue';
+// AutoShuffleNotification removed - now using instant shuffle
 import TutorialOverlay from './TutorialOverlay.vue';
 import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';

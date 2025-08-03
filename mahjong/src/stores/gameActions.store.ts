@@ -302,37 +302,26 @@ export const useGameActionsStore = defineStore('gameActions', () => {
       // Mark that we're preparing to auto-shuffle
       stateStore.setAutoShuffling(true);
       
-      // Emit event to show notification
-      window.dispatchEvent(new CustomEvent('auto-shuffle-pending', {
-        detail: {
-          delay: preferencesStore.autoShuffleDelay,
-          canCancel: true
-        }
-      }));
+      // Execute shuffle immediately without notification or delay
+      console.log('Auto-shuffle instantâneo ativado!');
+      stateStore.incrementAutoShuffleCount();
       
-      // Set a timer to auto-shuffle after delay
-      autoShuffleTimer = window.setTimeout(() => {
-        if (!hasValidMovesCheck() && stateStore.isAutoShuffling && autoShuffleMutex) {
-          console.log('Auto-shuffle ativado!');
-          stateStore.incrementAutoShuffleCount();
-          
-          // Track auto-shuffle in challenges
-          const challengesStore = useChallengesStore();
-          const context = getGameContext();
-          context.metadata = { 
-            ...context.metadata, 
-            autoShuffleUsed: true, 
-            autoShuffleCount: stateStore.autoShuffleCount 
-          };
-          challengesStore.updateProgress('use-auto-shuffle', context);
-          
-          // Emit event to trigger shuffle in TileField
-          window.dispatchEvent(new CustomEvent('auto-shuffle-execute'));
-        }
-        autoShuffleTimer = null;
-        stateStore.setAutoShuffling(false);
-        autoShuffleMutex = false; // Release mutex
-      }, preferencesStore.autoShuffleDelay);
+      // Track auto-shuffle in challenges
+      const challengesStore = useChallengesStore();
+      const context = getGameContext();
+      context.metadata = { 
+        ...context.metadata, 
+        autoShuffleUsed: true, 
+        autoShuffleCount: stateStore.autoShuffleCount 
+      };
+      challengesStore.updateProgress('use-auto-shuffle', context);
+      
+      // Emit event to trigger shuffle in TileField
+      window.dispatchEvent(new CustomEvent('auto-shuffle-execute'));
+      
+      // Clean up
+      stateStore.setAutoShuffling(false);
+      autoShuffleMutex = false; // Release mutex
     } else {
       // Auto-shuffle disabled or no tiles left - game over
       stateStore.setGameComplete(true);
