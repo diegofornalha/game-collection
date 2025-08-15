@@ -63,7 +63,7 @@ class PreferencesService {
       const prefs = await storageService.get(this.PREFS_STORE, this.PREFS_KEY);
       if (prefs) {
         // Remove the 'key' property from stored object
-        const { key, ...preferences } = prefs;
+        const { key, ...preferences } = prefs as any;
         this.preferences.value = { ...this.defaultPreferences, ...preferences };
       }
     } catch (error) {

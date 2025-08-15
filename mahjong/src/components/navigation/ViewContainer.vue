@@ -68,7 +68,7 @@ const currentView = computed(() => props.view || navigationStore.currentView);
 const viewComponents = {
   home: defineAsyncComponent({
     loader: () => import('@/views/HomeView.vue'),
-    loadingComponent: null,
+    loadingComponent: undefined,
     delay: 200,
     onError(error) {
       console.error('Failed to load HomeView:', error);
@@ -80,25 +80,25 @@ const viewComponents = {
   
   profile: defineAsyncComponent({
     loader: () => import('@/views/ProfileView.vue'),
-    loadingComponent: null,
+    loadingComponent: undefined,
     delay: 200
   }),
   
   settings: defineAsyncComponent({
     loader: () => import('@/views/SettingsView.vue'),
-    loadingComponent: null,
+    loadingComponent: undefined,
     delay: 200
   }),
   
   achievements: defineAsyncComponent({
     loader: () => import('@/views/AchievementsView.vue'),
-    loadingComponent: null,
+    loadingComponent: undefined,
     delay: 200
   }),
   
   store: defineAsyncComponent({
     loader: () => import('@/views/StoreView.vue'),
-    loadingComponent: null,
+    loadingComponent: undefined,
     delay: 200
   })
 };
@@ -115,7 +115,7 @@ watch(currentView, (newView) => {
 // View props to pass down
 const viewProps = computed(() => ({
   isActive: true,
-  viewParams: navigationStore.navigationHistory[navigationStore.navigationHistory.length - 1]?.params
+  viewParams: undefined // params removed from navigation
 }));
 
 // Container classes

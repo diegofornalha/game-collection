@@ -18,6 +18,9 @@
     <div 
       v-if="tilesReady && !paused && isVisible"
       class="tile-field"
+      role="application"
+      aria-label="Campo de jogo Mahjong"
+      :aria-busy="isLoading ? 'true' : 'false'"
       :style="{
         width: `${windowWidth}px`,
         height: `${windowHeight}px`
@@ -29,6 +32,7 @@
         <!-- Tile bottom -->
         <div
           v-if="tile.type && (tile.active || tile.selected)"
+          v-memo="[tile.x, tile.y, tile.z, tile.selected, tile.chaosRotation]"
           class="tile-bottom"
           :style="getTileBottomStyle(tile as MjTile)"
         ></div>
@@ -38,6 +42,7 @@
         <!-- Tile bottom side -->
         <div
           v-if="tile.type && (tile.active || tile.selected)"
+          v-memo="[tile.x, tile.y, tile.z, tile.selected]"
           class="tile-side-bottom"
           :style="getTileSideBottomStyle(tile as MjTile)"
         ></div>
@@ -47,6 +52,7 @@
         <!-- Tile left side -->
         <div
           v-if="tile.type && (tile.active || tile.selected)"
+          v-memo="[tile.x, tile.y, tile.z, tile.selected]"
           class="tile-side-left"
           :style="getTileSideLeftStyle(tile as MjTile)"
         ></div>
@@ -56,10 +62,17 @@
         <!-- Tile face -->
         <div
           v-if="tile.type && (tile.active || tile.selected)"
+          v-memo="[tile.x, tile.y, tile.z, tile.selected, tile.type, tile.showHint, tile.chaosOffsetX, tile.chaosOffsetY, tile.chaosRotation]"
           class="tile"
           :class="getTileClasses(tile as MjTile)"
           :style="getTileStyle(tile as MjTile)"
+          :aria-label="getTileAriaLabel(tile as MjTile)"
+          :aria-pressed="tile.selected ? 'true' : 'false'"
+          :tabindex="tile.isFree() ? 0 : -1"
+          role="button"
           @click.stop="onTileClick(tile as MjTile)"
+          @keydown.enter.stop="onTileClick(tile as MjTile)"
+          @keydown.space.stop.prevent="onTileClick(tile as MjTile)"
         >
           <!-- Mystical dragon spirit hint -->
           <div 
@@ -124,6 +137,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick, computed, inject } from 'vue';
 import { useGameStore } from '@/stores/game.store';
+import { useGameStateStore } from '@/stores/gameState.store';
 import { MjTile, MjTileType } from '@/models/tile.model';
 import { turtleLayout, mobileTurtleLayout, type TilePosition } from '@/data/layouts';
 import { audioService } from '@/services/audio.service';
@@ -154,9 +168,12 @@ const showHints = ref(false);
 const savedTileTypes = ref<(MjTileType | null)[]>([]);
 const savedChaosData = ref<{offsetX: number, offsetY: number, rotation: number}[]>([]);
 const currentLayout = ref('');
+const isLoading = ref(false);
+const focusedTileIndex = ref<number>(-1);
 
 // Selected tile tracking
 const selectedTile = ref<MjTile | null>(null);
+const freePairs = ref(0);
 
 // Field dimensions
 const elementPixelWidth = ref(40);
@@ -717,6 +734,61 @@ function getTileClasses(tile: MjTile) {
   };
 }
 
+function getTileAriaLabel(tile: MjTile) {
+  if (!tile.type) return '';
+  
+  const typeGroup = tile.type.group;
+  const typeIndex = tile.type.index;
+  const isFree = tile.isFree();
+  const isSelected = tile.selected;
+  
+  let label = '';
+  
+  // Describe the tile type
+  switch (typeGroup) {
+    case 'character':
+      label = `Caractere chinês ${typeIndex + 1}`;
+      break;
+    case 'bamboo':
+      label = `Bambu ${typeIndex + 1}`;
+      break;
+    case 'circle':
+      label = `Círculo ${typeIndex + 1}`;
+      break;
+    case 'dragon':
+      const dragonTypes = ['Dragão Vermelho', 'Dragão Verde', 'Dragão Branco'];
+      label = dragonTypes[typeIndex] || `Dragão ${typeIndex + 1}`;
+      break;
+    case 'wind':
+      const windTypes = ['Vento Leste', 'Vento Sul', 'Vento Oeste', 'Vento Norte'];
+      label = windTypes[typeIndex] || `Vento ${typeIndex + 1}`;
+      break;
+    case 'flower':
+      label = `Flor ${typeIndex + 1}`;
+      break;
+    case 'season':
+      const seasonTypes = ['Primavera', 'Verão', 'Outono', 'Inverno'];
+      label = seasonTypes[typeIndex] || `Estação ${typeIndex + 1}`;
+      break;
+    default:
+      label = `Peça ${typeGroup} ${typeIndex + 1}`;
+  }
+  
+  // Add position information
+  label += `, camada ${tile.z + 1}`;
+  
+  // Add status
+  if (isSelected) {
+    label += ', selecionada';
+  } else if (isFree) {
+    label += ', livre para jogar';
+  } else {
+    label += ', bloqueada';
+  }
+  
+  return label;
+}
+
 // Function to regenerate the current layout with same tile arrangement
 function regenerateLayout() {
   initTiles(true); // Preserve chaos
@@ -807,10 +879,11 @@ async function loadSavedGame(savedGame: any) {
     // Initialize game store with the tiles
     gameStore.initializeGame(savedGame.layout, [...tiles.value] as MjTile[]);
     
-    // Restore game state
-    gameStore.score = savedGame.score;
-    gameStore.timer = savedGame.timer;
-    gameStore.moves = savedGame.moves;
+    // Restore game state using state store directly
+    const stateStore = useGameStateStore();
+    stateStore.score = savedGame.score;
+    stateStore.timer = savedGame.timer;
+    stateStore.moves = savedGame.moves;
     
     // Restore undo stack
     const restoredUndoStack = [];
@@ -837,7 +910,7 @@ async function loadSavedGame(savedGame: any) {
       }
     }
     
-    gameStore.undoStack = restoredUndoStack;
+    stateStore.undoStack = restoredUndoStack;
     
     emit('ready');
   });
@@ -1160,8 +1233,9 @@ function shuffleRemainingTiles() {
     });
   }
   
-  // Force Vue to update
-  gameStore.tiles = [...gameStore.tiles];
+  // Force Vue to update using state store
+  const stateStore = useGameStateStore();
+  stateStore.tiles = [...stateStore.tiles];
   
   // Clear any selection
   gameStore.clearSelection();

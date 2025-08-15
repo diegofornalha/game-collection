@@ -1,0 +1,60 @@
+{
+  "swarm": {
+    "id": "mahjong-animation-speed-1754240000",
+    "topology": "mesh",
+    "maxAgents": 6,
+    "strategy": "specialized",
+    "description": "Análise e otimização de velocidade de animações no Mahjong",
+    "features": {
+      "enableCrossCommunication": true,
+      "optimizeForPerformance": true,
+      "parallelExecution": true
+    }
+  },
+  "agents": {
+    "planned": [
+      {
+        "name": "CSS Animation Analyzer",
+        "type": "analyst",
+        "focus": "Análise de animações CSS, transitions e keyframes"
+      },
+      {
+        "name": "JavaScript Performance Profiler",
+        "type": "researcher",
+        "focus": "Profile de performance JavaScript durante animações"
+      },
+      {
+        "name": "Rendering Pipeline Inspector",
+        "type": "analyst",
+        "focus": "Análise de repaints, reflows e composite layers"
+      },
+      {
+        "name": "Animation Optimizer",
+        "type": "coder",
+        "focus": "Implementação de otimizações de animação"
+      },
+      {
+        "name": "Performance Tester",
+        "type": "tester",
+        "focus": "Testes de performance e validação de melhorias"
+      },
+      {
+        "name": "Coordinator",
+        "type": "coordinator",
+        "focus": "Coordenação do swarm e síntese de resultados"
+      }
+    ]
+  },
+  "objectives": [
+    "Identificar animações lentas no Mahjong",
+    "Analisar causas de problemas de performance",
+    "Implementar otimizações de CSS e JavaScript",
+    "Validar melhorias de performance",
+    "Documentar soluções aplicadas"
+  ],
+  "metrics": {
+    "targetFPS": 60,
+    "maxAnimationDuration": 300,
+    "acceptableJank": 16
+  }
+}

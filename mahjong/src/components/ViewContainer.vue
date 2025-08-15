@@ -20,10 +20,11 @@ import GameView from './GameView.vue';
 import MobileGameView from './MobileGameView.vue';
 
 // Lazy loading para outras views
-const HomeView = defineAsyncComponent(() => import('./views/HomeView.vue'));
-const ProfileView = defineAsyncComponent(() => import('./views/ProfileView.vue'));
-const SettingsView = defineAsyncComponent(() => import('./views/SettingsView.vue'));
-const AchievementsView = defineAsyncComponent(() => import('./views/AchievementsView.vue'));
+const HomeView = defineAsyncComponent(() => import('../views/HomeView.vue'));
+const ProfileView = defineAsyncComponent(() => import('../views/ProfileView.vue'));
+const SettingsView = defineAsyncComponent(() => import('../views/SettingsView.vue'));
+const AchievementsView = defineAsyncComponent(() => import('../views/AchievementsView.vue'));
+const StoreView = defineAsyncComponent(() => import('../views/StoreView.vue'));
 
 const navigationStore = useNavigationStore();
 
@@ -45,8 +46,9 @@ const currentViewComponent = computed(() => {
     game: isMobile.value ? MobileGameView : GameView,
     profile: ProfileView,
     settings: SettingsView,
-    achievements: AchievementsView
-  };
+    achievements: AchievementsView,
+    store: StoreView
+  } as const;
   
   return viewMap[navigationStore.currentView];
 });

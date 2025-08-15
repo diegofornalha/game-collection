@@ -29,14 +29,56 @@ class TileFactory {
     adjacentL?: MjTile[],
     adjacentR?: MjTile[],
     active?: boolean
-  } = {}): MjTile {
-    const tile = new MjTile(x, y, [], this.idCounter++);
-    tile.z = z;
-    tile.type = options.type || new MjTileType('num', 1, false);
-    tile.active = options.active ?? true;
-    tile.blockedBy = options.blockedBy || [];
-    tile.adjacentL = options.adjacentL || [];
-    tile.adjacentR = options.adjacentR || [];
+  } = {}): any {
+    // Create a mock tile that satisfies the interface without using the real MjTile constructor
+    const tile = {
+      id: this.idCounter++,
+      x,
+      y,
+      z,
+      top: 0,
+      left: 0,
+      type: options.type || new MjTileType('num', 1, false),
+      active: options.active ?? true,
+      selected: false,
+      isSelected: false,
+      showHint: false,
+      isHinted: false,
+      hasFreePair: false,
+      isBlocked: false,
+      tileSizeX: 2,
+      tileSizeY: 2,
+      blockedBy: options.blockedBy || [],
+      adjacentL: options.adjacentL || [],
+      adjacentR: options.adjacentR || [],
+      chaosOffsetX: 0,
+      chaosOffsetY: 0,
+      chaosRotation: 0,
+      sortingOrder: z * 10000 - x * 100 + y,
+      getTileZCoordinate: function() { return this.z; },
+      setType: function(type: MjTileType) { this.type = type; },
+      overlaps2d: function() { return false; },
+      isXAdjacentTo: function() { return [false, false]; },
+      checkRelativePositions: function() {},
+      matches: function(other: any) {
+        return this.type && other.type && this.type.matches(other.type);
+      },
+      isFree: function() {
+        const blockedByActive = this.blockedBy.some((t: any) => t.active);
+        if (blockedByActive) return false;
+        const hasActiveLeft = this.adjacentL.some((t: any) => t.active);
+        const hasActiveRight = this.adjacentR.some((t: any) => t.active);
+        return !hasActiveLeft || !hasActiveRight;
+      },
+      remove: function() { this.active = false; this.unselect(); },
+      returnToField: function() { this.active = true; },
+      select: function() { this.selected = true; this.isSelected = true; },
+      unselect: function() { this.selected = false; this.isSelected = false; },
+      reset: function() { this.unselect(); this.active = true; this.updateBlockedState(); },
+      startHint: function() { this.showHint = true; this.isHinted = true; },
+      stopHint: function() { this.showHint = false; this.isHinted = false; },
+      updateBlockedState: function() { this.isBlocked = !this.isFree(); }
+    };
     
     // Update blocked state
     tile.updateBlockedState();
@@ -149,7 +191,6 @@ class TileFactory {
 }
 
 // Import the functions we need to test
-const shuffleRemainingTiles = vi.fn();
 const hasValidMoves = (tiles: MjTile[]): boolean => {
   const freeTiles = tiles.filter(t => t.active && t.isFree());
   

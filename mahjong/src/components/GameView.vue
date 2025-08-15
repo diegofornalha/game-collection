@@ -37,11 +37,36 @@
       <h1>🎉 Parabéns!</h1>
       <p>Você removeu todas as peças com sucesso!</p>
       <p><strong>Sua pontuação final: {{ gameStore.score }}</strong></p>
+      
+      <!-- XP Breakdown -->
+      <div v-if="(window as any).lastXPResult" style="margin: 15px 0; padding: 10px; background: rgba(255, 215, 0, 0.1); border-radius: 8px; border: 2px solid #FFD700;">
+        <p style="margin: 5px 0; color: #FFD700;">
+          <strong>✨ Experiência Ganha ✨</strong>
+        </p>
+        <div style="margin: 10px 0; font-size: 0.9em;">
+          <p v-for="(line, index) in (window as any).lastXPResult.breakdown" :key="index" style="margin: 3px 0;">
+            {{ line }}
+          </p>
+        </div>
+      </div>
+      
+      <!-- Ofensiva concluída -->
+      <div v-if="dailyStreakStore.isStreakActive" style="margin: 15px 0; padding: 10px; background: rgba(255, 200, 0, 0.1); border-radius: 8px; border: 2px solid #FFC000;">
+        <p style="margin: 5px 0; color: #FFA500;">
+          <strong>🔥 Ofensiva Diária Concluída! 🔥</strong>
+        </p>
+        <p style="margin: 5px 0;">
+          Ofensiva atual: <strong>{{ dailyStreakStore.streakData.currentStreak }} {{ dailyStreakStore.streakData.currentStreak === 1 ? 'dia' : 'dias' }}</strong>
+        </p>
+        <p v-if="dailyStreakStore.nextReward" style="margin: 5px 0; font-size: 0.9em;">
+          Próxima recompensa em {{ dailyStreakStore.daysUntilNextReward }} {{ dailyStreakStore.daysUntilNextReward === 1 ? 'dia' : 'dias' }}
+        </p>
+      </div>
+      
       <p>Muito bem jogado! Pronto para outra jornada?</p>
     </AppModal>
 
-    <!-- Auto-shuffle notification -->
-    <AutoShuffleNotification />
+    <!-- Auto-shuffle notification removed - now instant shuffle -->
 
     <div class="game-component">
       <div v-if="!isInMobileView" class="header-section">
@@ -76,6 +101,27 @@
         />
       </div>
     </div>
+    
+    <!-- Tutorial overlay - rendered last to ensure it's on top -->
+    <TutorialOverlay />
+    
+    <!-- XP Displays -->
+    <XPDisplay 
+      v-for="xp in xpDisplays" 
+      :key="xp.id"
+      :xp-amount="xp.amount"
+      :x="xp.x"
+      :y="xp.y"
+    />
+    
+    <!-- Level Up Modal -->
+    <LevelUpModal
+      :show="showLevelUpModal"
+      :new-level="levelUpData.newLevel"
+      :tokens-earned="levelUpData.tokensEarned"
+      :next-level-x-p="levelUpData.nextLevelXP"
+      @close="showLevelUpModal = false"
+    />
   </div>
 </template>
 
@@ -89,9 +135,13 @@ import AppModal from './AppModal.vue';
 import StatusBar from './StatusBar.vue';
 import TileField from './TileField.vue';
 import UserProfileHeader from './UserProfileHeader.vue';
-import AutoShuffleNotification from './AutoShuffleNotification.vue';
+// AutoShuffleNotification removed - now using instant shuffle
+import TutorialOverlay from './TutorialOverlay.vue';
 import { audioService } from '@/services/audio.service';
 import { storageService } from '@/services/storage.service';
+import { xpCalculatorService } from '@/services/xpCalculator.service';
+import XPDisplay from './XPDisplay.vue';
+import LevelUpModal from './LevelUpModal.vue';
 
 const gameStore = useGameStore();
 const dailyStreakStore = useDailyStreakStore();
@@ -109,11 +159,20 @@ const showMainMenu = ref(true);
 const showRestartDialog = ref(false);
 const showTieModal = ref(false);
 const showWinModal = ref(false);
+const showLevelUpModal = ref(false);
 
 // Game state
 const currentLayout = ref('default');
 const numberOfHints = ref(3);
 const hasSavedGame = ref(false);
+
+// XP Display state
+const xpDisplays = ref<Array<{ id: number; amount: number; x: number; y: number }>>([]);
+const levelUpData = ref({
+  newLevel: 0,
+  tokensEarned: 0,
+  nextLevelXP: 0
+});
 
 // Modal actions
 const mainMenuModalActions = computed(() => {
@@ -282,15 +341,73 @@ function onTileCollectionReady() {
   // Game is ready to play
 }
 
-function onTileCleared() {
+function onTileCleared(event?: MouseEvent) {
   audioService.play('click');
+  
+  // Calculate and show XP for the match
+  const remainingTiles = gameStore.tiles.filter(t => t.active).length;
+  const matchXP = xpCalculatorService.calculateMatchXP(gameStore.currentCombo, remainingTiles);
+  
+  // Show XP animation at mouse position or center
+  const xpDisplay = {
+    id: Date.now(),
+    amount: matchXP,
+    x: event?.clientX || window.innerWidth / 2,
+    y: event?.clientY || window.innerHeight / 2
+  };
+  
+  xpDisplays.value.push(xpDisplay);
+  
+  // Remove after animation
+  setTimeout(() => {
+    xpDisplays.value = xpDisplays.value.filter(xp => xp.id !== xpDisplay.id);
+  }, 2500);
+  
+  // Add XP to user profile
+  const previousLevel = userProfileStore.level;
+  userProfileStore.addXP(matchXP);
+  
+  // Check for level up
+  if (userProfileStore.level > previousLevel) {
+    handleLevelUp();
+  }
   
   // Check game state
   if (gameStore.isGameComplete) {
     if (gameStore.tiles.filter(t => t.active).length === 0) {
       // Win
-      showWinModal.value = true;
       audioService.play('win');
+      
+      // Calculate game stats for XP
+      const gameStats = {
+        timeInSeconds: gameStore.timer,
+        maxCombo: gameStore.maxCombo,
+        hintsUsed: gameStore.hintsUsed,
+        undoCount: gameStore.undoCount,
+        score: gameStore.score,
+        remainingTiles: 0,
+        layoutId: currentLayout.value
+      };
+      
+      // Calculate win XP
+      const xpResult = xpCalculatorService.calculateWinXP(gameStats, dailyStreakStore.streakData);
+      
+      // Add win XP
+      const previousLevel = userProfileStore.level;
+      userProfileStore.addXP(xpResult.totalXP);
+      
+      // Show XP in modal (store for display)
+      (window as any).lastXPResult = xpResult;
+      
+      // Check for level up before showing win modal
+      if (userProfileStore.level > previousLevel) {
+        handleLevelUp();
+      }
+      
+      showWinModal.value = true;
+      
+      // Marcar jogo como completado para a ofensiva diária
+      dailyStreakStore.markGameCompleted();
       
       // Recompensar com tokens bonus por completar o jogo durante streak
       if (dailyStreakStore.isStreakActive) {
@@ -310,6 +427,28 @@ function onTileCleared() {
 
 function onClick() {
   audioService.play('click', 0);
+}
+
+function handleLevelUp() {
+  const level = userProfileStore.level;
+  const tokensEarned = level * 50; // 50 tokens per level
+  const nextLevelXP = xpCalculatorService.calculateXPForLevel(level + 1);
+  
+  // Update level up data
+  levelUpData.value = {
+    newLevel: level,
+    tokensEarned,
+    nextLevelXP
+  };
+  
+  // Add tokens
+  userProfileStore.addTokens(tokensEarned);
+  
+  // Play level up sound
+  audioService.play('levelup');
+  
+  // Show level up modal
+  showLevelUpModal.value = true;
 }
 
 function onUndo() {
@@ -422,6 +561,15 @@ function handleKeyPress(event: KeyboardEvent) {
   }
 }
 
+// Debounce helper
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: number | null = null;
+  return ((...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = window.setTimeout(() => func(...args), wait);
+  }) as T;
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyPress);
   
@@ -430,8 +578,11 @@ onMounted(async () => {
     isInMobileView.value = window.matchMedia('(max-width: 768px)').matches;
   };
   
+  // Debounced resize handler (200ms delay)
+  const debouncedCheckMobile = debounce(checkMobile, 200);
+  
   checkMobile();
-  window.addEventListener('resize', checkMobile);
+  window.addEventListener('resize', debouncedCheckMobile);
   
   // Check for saved game
   try {
@@ -457,7 +608,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyPress);
-  window.removeEventListener('resize', () => {});
+  // Store cleanup will be handled by stores themselves
+  gameStore.cleanup();
 });
 </script>
 

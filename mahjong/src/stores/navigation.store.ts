@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-export type ViewType = 'home' | 'game' | 'profile' | 'settings' | 'achievements';
+export type ViewType = 'home' | 'game' | 'profile' | 'settings' | 'achievements' | 'store';
 
 interface GameSnapshot {
   tiles: any[];
@@ -18,6 +18,9 @@ export const useNavigationStore = defineStore('navigation', () => {
   const navigationHistory = ref<ViewType[]>(['game']);
   const gameSnapshot = ref<GameSnapshot | null>(null);
   const isMenuOpen = ref(false);
+  const isBottomNavVisible = ref(true);
+  const isTransitioning = ref(false);
+  const transitionDirection = ref<'forward' | 'backward'>('forward');
 
   // Getters
   const canGoBack = computed(() => navigationHistory.value.length > 1);
@@ -28,7 +31,8 @@ export const useNavigationStore = defineStore('navigation', () => {
       game: 'Mahjong',
       profile: 'Perfil',
       settings: 'Configurações',
-      achievements: 'Atalhos'
+      achievements: 'Atalhos',
+      store: 'Loja'
     };
     return titles[currentView.value];
   });
@@ -105,6 +109,14 @@ export const useNavigationStore = defineStore('navigation', () => {
     isMenuOpen.value = false;
   }
 
+  function setTransitioning(value: boolean) {
+    isTransitioning.value = value;
+  }
+
+  function setBottomNavVisible(value: boolean) {
+    isBottomNavVisible.value = value;
+  }
+
   return {
     // Estado
     currentView,
@@ -112,6 +124,9 @@ export const useNavigationStore = defineStore('navigation', () => {
     navigationHistory,
     gameSnapshot,
     isMenuOpen,
+    isBottomNavVisible,
+    isTransitioning,
+    transitionDirection,
 
     // Getters
     canGoBack,
@@ -126,6 +141,8 @@ export const useNavigationStore = defineStore('navigation', () => {
     setGameSnapshot,
     toggleMenu,
     closeMenu,
-    resetToGame
+    resetToGame,
+    setTransitioning,
+    setBottomNavVisible
   };
 });

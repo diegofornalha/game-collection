@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 import TileComponent from '../TileComponent.vue';
 import TileField from '../TileField.vue';
 import { preferencesService } from '@/services/preferences.service';
@@ -176,7 +175,7 @@ describe('Tile Visual Styles', () => {
   describe('TileField Visual Style Application', () => {
     it('should render tiles with appropriate visual styles', () => {
       const gameStore = useGameStore();
-      gameStore.currentLayoutId = 'turtle';
+      // currentLayout is readonly, it's set via initializeGame
       
       const wrapper = mount(TileField, {
         props: {

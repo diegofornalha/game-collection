@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, provide, ref } from 'vue';
+import { computed, onMounted, provide } from 'vue';
 import ViewContainer from './components/ViewContainer.vue';
 import NavigationMenu from './components/NavigationMenu.vue';
 import UserProfileHeader from './components/UserProfileHeader.vue';

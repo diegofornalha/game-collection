@@ -27,9 +27,9 @@ export function initializeGamificationStores() {
   // Subscribe to game events for challenge progress
   let gameStarted = false;
   
-  gameStore.$subscribe((_mutation, state) => {
+  gameStore.$subscribe(() => {
     // Detectar início de jogo (primeiro movimento)
-    if (!gameStarted && state.history && state.history.length === 1) {
+    if (!gameStarted && gameStore.moves.length === 1) {
       gameStarted = true;
       
       // Verificar streak quando inicia o jogo
@@ -51,18 +51,18 @@ export function initializeGamificationStores() {
     }
     
     // Resetar flag quando jogo termina
-    if (state.isGameComplete && gameStarted) {
+    if (gameStore.isGameComplete && gameStarted) {
       gameStarted = false;
       
       // Validar todos os desafios ativos
       const gameContext: GameContext = {
-        gameWon: state.tiles.filter(t => t.active).length === 0,
-        movesCount: state.history?.length || 0,
-        timeElapsed: state.timer,
-        hintsUsed: state.hintsUsed || 0,
-        undoUsed: state.undoCount || 0,
-        score: state.score,
-        perfectGame: (state.hintsUsed || 0) === 0 && (state.undoCount || 0) === 0
+        gameWon: gameStore.tiles.filter(t => t.active).length === 0,
+        movesCount: gameStore.moves.length || 0,
+        timeElapsed: gameStore.timer,
+        hintsUsed: gameStore.hintsUsed || 0,
+        undoUsed: gameStore.undoCount || 0,
+        score: gameStore.score,
+        perfectGame: (gameStore.hintsUsed || 0) === 0 && (gameStore.undoCount || 0) === 0
       };
       
       challenges.activeChallenges.forEach(challenge => {

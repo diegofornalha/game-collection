@@ -19,7 +19,7 @@
         :aria-current="isActive(item.id) ? 'page' : undefined"
       >
         <div class="nav-icon">
-          <component :is="getIcon(item.id)" />
+          <span class="emoji-icon">{{ getEmoji(item.id) }}</span>
           <span v-if="item.badge" class="badge">{{ item.badge }}</span>
         </div>
         <span class="nav-label">{{ item.label }}</span>
@@ -29,8 +29,8 @@
       <div class="gesture-indicator" />
     </div>
     
-    <!-- Desktop Header Navigation -->
-    <div v-else class="nav-container desktop">
+    <!-- Desktop/Inline Header Navigation -->
+    <div v-else class="nav-container" :class="variant">
       <div class="nav-group left">
         <button 
           v-if="navigationStore.canGoBack" 
@@ -38,7 +38,7 @@
           @click="goBack"
           aria-label="Voltar"
         >
-          <ArrowLeftIcon />
+          <span class="emoji-icon">⬅️</span>
         </button>
         
         <div class="app-logo">
@@ -57,7 +57,7 @@
             @click="navigate(item.id)"
             :aria-current="isActive(item.id) ? 'page' : undefined"
           >
-            <component :is="getIcon(item.id)" />
+            <span class="emoji-icon">{{ getEmoji(item.id) }}</span>
             <span>{{ item.label }}</span>
           </button>
         </TransitionGroup>
@@ -70,7 +70,7 @@
           @click="navigate('settings')"
           aria-label="Configurações"
         >
-          <SettingsIcon />
+          <span class="emoji-icon">⚙️</span>
         </button>
       </div>
     </div>
@@ -92,7 +92,7 @@ import SettingsIcon from '@/components/icons/SettingsIcon.vue';
 import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon.vue';
 
 interface Props {
-  variant?: 'mobile' | 'desktop';
+  variant?: 'mobile' | 'desktop' | 'inline';
   visible?: boolean;
 }
 
@@ -138,6 +138,16 @@ const iconMap = {
   settings: SettingsIcon
 };
 
+// Emoji mapping
+const emojiMap = {
+  home: '🏠',
+  game: '🀄',
+  achievements: '🏆',
+  store: '🛍️',
+  profile: '👤',
+  settings: '⚙️'
+};
+
 // Computed
 const isVisible = computed(() => {
   if (props.visible !== undefined) {
@@ -163,6 +173,10 @@ function goBack(): void {
 
 function getIcon(viewId: ViewType) {
   return iconMap[viewId] || HomeIcon;
+}
+
+function getEmoji(viewId: ViewType): string {
+  return emojiMap[viewId] || '📱';
 }
 </script>
 
@@ -266,6 +280,15 @@ function getIcon(viewId: ViewType) {
     svg {
       width: 100%;
       height: 100%;
+    }
+    
+    .emoji-icon {
+      font-size: 24px;
+      display: inline-block;
+      line-height: 1;
+      width: 100%;
+      height: 100%;
+      text-align: center;
     }
     
     .badge {
@@ -416,6 +439,12 @@ function getIcon(viewId: ViewType) {
     svg {
       width: 18px;
       height: 18px;
+    }
+    
+    .emoji-icon {
+      font-size: 20px;
+      display: inline-block;
+      line-height: 1;
     }
   }
 }
