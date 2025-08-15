@@ -473,6 +473,11 @@ async function emergencyRecovery() {
   shuffleTypesFisherYates(true);
   updateFreePairs();
   
+  // Check for valid moves after regeneration
+  nextTick(() => {
+    checkAndHandleNoMoves();
+  });
+  
   await nextTick();
   
   retrieveDimensionsFromElement();
