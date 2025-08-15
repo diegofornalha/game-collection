@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-export type ViewType = 'home' | 'game' | 'profile' | 'settings' | 'achievements' | 'store';
+export type ViewType = 'game' | 'profile' | 'settings' | 'achievements' | 'store';
 
 interface GameSnapshot {
   tiles: any[];
@@ -27,7 +27,6 @@ export const useNavigationStore = defineStore('navigation', () => {
   const isInGame = computed(() => currentView.value === 'game');
   const currentViewTitle = computed(() => {
     const titles: Record<ViewType, string> = {
-      home: 'Início',
       game: 'Mahjong',
       profile: 'Perfil',
       settings: 'Configurações',

@@ -12,6 +12,8 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@sentry/vite-plugin": "^4.1.1",
+    "@sentry/vue": "^10.5.0",
     "@vueuse/core": "^13.6.0",
     "date-fns": "^4.1.0",
     "pinia": "^2.3.0",

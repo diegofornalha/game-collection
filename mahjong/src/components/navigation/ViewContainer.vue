@@ -66,16 +66,6 @@ const currentView = computed(() => props.view || navigationStore.currentView);
 
 // Lazy load view components
 const viewComponents = {
-  home: defineAsyncComponent({
-    loader: () => import('@/views/HomeView.vue'),
-    loadingComponent: undefined,
-    delay: 200,
-    onError(error) {
-      console.error('Failed to load HomeView:', error);
-      loadError.value = error;
-    }
-  }),
-  
   game: GameView, // Use direct import for critical component
   
   profile: defineAsyncComponent({
@@ -144,7 +134,6 @@ const keepAliveList = computed(() => {
   return props.keepAliveViews.map(view => {
     switch (view) {
       case 'game': return 'GameView';
-      case 'home': return 'HomeView';
       case 'profile': return 'ProfileView';
       case 'settings': return 'SettingsView';
       case 'achievements': return 'AchievementsView';
@@ -170,7 +159,7 @@ function onViewReady() {
 
 // Preload views on mount
 const preloadViews = async () => {
-  const viewsToPreload = props.preloadViews || ['home'];
+  const viewsToPreload = props.preloadViews || ['game'];
   
   for (const view of viewsToPreload) {
     if (view !== 'game' && viewComponents[view]) { // Game is already loaded
@@ -242,12 +231,12 @@ if ('requestIdleCallback' in window) {
   }
 }
 
-// Slide transitions (mobile)
+// Slide transitions - mantendo velocidade suave e consistente
 .slide-enter-active,
 .slide-leave-active,
 .slide-back-enter-active,
 .slide-back-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.5s ease, opacity 0.5s ease;
 }
 
 .slide-enter-from {
@@ -271,10 +260,10 @@ if ('requestIdleCallback' in window) {
   opacity: 0;
 }
 
-// Fade transitions (desktop)
+// Fade transitions - mantendo velocidade suave
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.4s ease;
 }
 
 .fade-enter-from,
@@ -282,10 +271,10 @@ if ('requestIdleCallback' in window) {
   opacity: 0;
 }
 
-// Scale transitions (modals)
+// Scale transitions (modals) - mantendo velocidade suave
 .scale-enter-active,
 .scale-leave-active {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
 .scale-enter-from {
@@ -314,11 +303,13 @@ if ('requestIdleCallback' in window) {
 
 // Mobile optimizations
 @media (max-width: 768px) {
+  // Manter a mesma duração de transição do desktop (0.5s)
+  // para consistência visual entre plataformas
   .slide-enter-active,
   .slide-leave-active,
   .slide-back-enter-active,
   .slide-back-leave-active {
-    transition-duration: 0.25s; // Faster on mobile
+    transition-duration: 0.5s; // Same as desktop for consistency
   }
 }
 

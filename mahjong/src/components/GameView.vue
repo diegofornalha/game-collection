@@ -64,6 +64,9 @@
       </div>
       
       <p>Muito bem jogado! Pronto para outra jornada?</p>
+      <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+        Novo jogo iniciará automaticamente em 5 segundos...
+      </p>
     </AppModal>
 
     <!-- Auto-shuffle notification removed - now instant shuffle -->
@@ -126,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 import { useDailyStreakStore } from '@/stores/gamification/dailyStreak.store';
 import { useUserProfileStore } from '@/stores/gamification/userProfile.store';
@@ -155,7 +158,7 @@ const tileFieldRef = ref<InstanceType<typeof TileField> | null>(null);
 const isInMobileView = ref(false);
 
 // Modal states
-const showMainMenu = ref(true);
+const showMainMenu = ref(false);
 const showRestartDialog = ref(false);
 const showTieModal = ref(false);
 const showWinModal = ref(false);
@@ -172,6 +175,19 @@ const levelUpData = ref({
   newLevel: 0,
   tokensEarned: 0,
   nextLevelXP: 0
+});
+
+// Auto-start new game after win modal
+watch(showWinModal, (newValue) => {
+  if (newValue) {
+    // Auto-close and start new game after 5 seconds
+    setTimeout(() => {
+      if (showWinModal.value) {
+        showWinModal.value = false;
+        startNewGame();
+      }
+    }, 5000);
+  }
 });
 
 // Modal actions
@@ -257,18 +273,11 @@ const tieModalActions = [
 
 const winModalActions = [
   {
-    label: 'Iniciar Nova Jornada',
+    label: 'Jogar Novamente',
     primary: true,
     action: () => {
       showWinModal.value = false;
       startNewGame();
-    }
-  },
-  {
-    label: 'Voltar ao Menu',
-    action: () => {
-      showWinModal.value = false;
-      showMainMenu.value = true;
     }
   }
 ];
@@ -534,8 +543,8 @@ function handleKeyPress(event: KeyboardEvent) {
       break;
     case 'escape':
       event.preventDefault();
-      // Go to home menu
-      navigationStore.navigateTo('home');
+      // Pause the game instead of going to home
+      gameStore.pauseGame();
       break;
     case 'f':
       event.preventDefault();
@@ -604,6 +613,11 @@ onMounted(async () => {
     'bonus': ['/sounds/bonus.wav'],
     'coin': ['/sounds/coin1.wav', '/sounds/coin2.wav', '/sounds/coin3.wav']
   });
+  
+  // Auto-start new game if no saved game exists
+  if (!hasSavedGame.value && !gameStore.isPlaying) {
+    startNewGame();
+  }
 });
 
 onUnmounted(() => {

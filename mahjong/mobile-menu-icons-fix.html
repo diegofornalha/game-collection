@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correção de Ícones do Menu Mobile - Mahjong</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-top: 2rem;
+        }
+        
+        .problem {
+            background: #fee;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            margin: 1rem 0;
+        }
+        
+        .solution {
+            background: #efe;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+            margin: 1rem 0;
+        }
+        
+        .changes {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .icon-preview {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .icon-item {
+            text-align: center;
+        }
+        
+        .icon-item svg {
+            width: 32px;
+            height: 32px;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .icon-item p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #666;
+        }
+        
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .before, .after {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .before {
+            background: #fff5f5;
+        }
+        
+        .after {
+            background: #f5fff5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Correção de Ícones do Menu Mobile - Mahjong</h1>
+        
+        <div class="problem">
+            <h3>❌ Problema Identificado</h3>
+            <p>O menu inferior no mobile estava exibindo apenas texto (Jogar, Perfil, Atalhos, Configurações) sem os ícones correspondentes.</p>
+            <p>Causa: Os ícones dependiam do Font Awesome que não estava sendo carregado corretamente no mobile.</p>
+        </div>
+        
+        <div class="solution">
+            <h3>✅ Solução Implementada</h3>
+            <p>Substituí os ícones Font Awesome por ícones SVG inline, garantindo que sempre apareçam independentemente do carregamento de fontes externas.</p>
+        </div>
+        
+        <h2>🎨 Novos Ícones SVG</h2>
+        
+        <div class="icon-preview">
+            <div class="icon-item">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+                <p>Jogar</p>
+            </div>
+            
+            <div class="icon-item">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <p>Perfil</p>
+            </div>
+            
+            <div class="icon-item">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+                </svg>
+                <p>Atalhos</p>
+            </div>
+            
+            <div class="icon-item">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+                <p>Configurações</p>
+            </div>
+        </div>
+        
+        <h2>📋 Mudanças Técnicas</h2>
+        
+        <div class="changes">
+            <h3>NavigationMenu.vue</h3>
+            <div class="before-after">
+                <div class="before">
+                    <strong>❌ Antes (Font Awesome):</strong>
+                    <pre><code>&lt;i :class="item.icon"&gt;&lt;/i&gt;
+
+icon: 'fas fa-gamepad'</code></pre>
+                </div>
+                <div class="after">
+                    <strong>✅ Depois (SVG Inline):</strong>
+                    <pre><code>&lt;span class="menu-icon" 
+      v-html="item.icon"&gt;&lt;/span&gt;
+
+icon: '&lt;svg&gt;...&lt;/svg&gt;'</code></pre>
+                </div>
+            </div>
+        </div>
+        
+        <h2>🎯 Benefícios da Solução</h2>
+        
+        <div class="solution">
+            <ul>
+                <li>✅ <strong>Independência de fontes externas</strong>: Ícones sempre visíveis</li>
+                <li>✅ <strong>Performance melhor</strong>: Não precisa carregar Font Awesome</li>
+                <li>✅ <strong>Controle total</strong>: Podemos personalizar cores e tamanhos via CSS</li>
+                <li>✅ <strong>Compatibilidade</strong>: Funciona em todos os dispositivos</li>
+                <li>✅ <strong>Ícones mais claros</strong>: Usando Material Design icons reconhecíveis</li>
+            </ul>
+        </div>
+        
+        <h2>🎮 Como Testar</h2>
+        
+        <div class="changes">
+            <ol>
+                <li>Acesse o jogo em <code>http://localhost:3667/</code></li>
+                <li>Abra as ferramentas de desenvolvedor (F12)</li>
+                <li>Ative o modo de dispositivo móvel (Ctrl+Shift+M)</li>
+                <li>Verifique o menu inferior - os ícones devem estar visíveis</li>
+                <li>Teste em um dispositivo móvel real para confirmar</li>
+            </ol>
+        </div>
+        
+        <div class="solution">
+            <h3>🎉 Resultado Final</h3>
+            <p>O menu mobile agora exibe corretamente os ícones junto com os labels, proporcionando uma melhor experiência de usuário e navegação mais intuitiva!</p>
+        </div>
+    </div>
+</body>
+</html>

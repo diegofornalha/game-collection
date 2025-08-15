@@ -83,13 +83,11 @@ import { useNavigationStore } from '@/stores/navigation.store';
 import type { ViewType } from '@/stores/navigation.store';
 
 // Icons
-import HomeIcon from '@/components/icons/HomeIcon.vue';
 import GameIcon from '@/components/icons/GameIcon.vue';
 import TrophyIcon from '@/components/icons/TrophyIcon.vue';
 import StoreIcon from '@/components/icons/StoreIcon.vue';
 import UserIcon from '@/components/icons/UserIcon.vue';
 import SettingsIcon from '@/components/icons/SettingsIcon.vue';
-import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon.vue';
 
 interface Props {
   variant?: 'mobile' | 'desktop' | 'inline';
@@ -113,24 +111,21 @@ interface NavItem {
 }
 
 const mobileNavItems: NavItem[] = [
-  { id: 'home', label: 'Início', order: 1 },
+  { id: 'game', label: 'Jogar', order: 1, primary: true },
   { id: 'achievements', label: 'Conquistas', order: 2 },
-  { id: 'game', label: 'Jogar', order: 3, primary: true },
-  { id: 'store', label: 'Loja', order: 4 },
-  { id: 'profile', label: 'Perfil', order: 5 }
+  { id: 'store', label: 'Loja', order: 3 },
+  { id: 'profile', label: 'Perfil', order: 4 }
 ];
 
 const desktopNavItems: NavItem[] = [
-  { id: 'home', label: 'Início', order: 1 },
-  { id: 'game', label: 'Jogar', order: 2 },
-  { id: 'achievements', label: 'Conquistas', order: 3 },
-  { id: 'store', label: 'Loja', order: 4 },
-  { id: 'profile', label: 'Perfil', order: 5 }
+  { id: 'game', label: 'Jogar', order: 1 },
+  { id: 'achievements', label: 'Conquistas', order: 2 },
+  { id: 'store', label: 'Loja', order: 3 },
+  { id: 'profile', label: 'Perfil', order: 4 }
 ];
 
 // Icon mapping
 const iconMap = {
-  home: HomeIcon,
   game: GameIcon,
   achievements: TrophyIcon,
   store: StoreIcon,
@@ -171,9 +166,6 @@ function goBack(): void {
   navigationStore.goBack();
 }
 
-function getIcon(viewId: ViewType) {
-  return iconMap[viewId] || HomeIcon;
-}
 
 function getEmoji(viewId: ViewType): string {
   return emojiMap[viewId] || '📱';

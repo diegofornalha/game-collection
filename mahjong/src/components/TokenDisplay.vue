@@ -137,27 +137,29 @@ export default {
 
 <style scoped>
 .token-display {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--surface-color);
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: transparent;
   border-radius: var(--border-radius-lg);
-  border: 1px solid var(--border-color);
+  border: none;
   position: relative;
   transition: all 0.3s;
 }
 
 .token-display:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-color);
+  transform: none;
+  box-shadow: none;
 }
 
 /* Ícone do token */
 .token-icon {
-  width: 24px;
-  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   color: var(--yellow-500);
   animation: rotate 20s linear infinite;
 }
@@ -179,9 +181,10 @@ export default {
 /* Quantidade de tokens */
 .token-amount {
   font-weight: 600;
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 /* Indicador de mudança */

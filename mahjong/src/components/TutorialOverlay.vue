@@ -3,20 +3,20 @@
     <div v-if="showTutorial" class="tutorial-overlay">
       <div class="tutorial-backdrop" @click="skipTutorial"></div>
       
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div 
+          v-for="(step, index) in tutorialSteps" 
+          :key="index"
+          class="step-dot"
+          :class="{ 'active': currentStep === index, 'completed': currentStep > index }"
+        ></div>
+      </div>
+      
       <div class="tutorial-wrapper">
         <div class="tutorial-content" :class="{ 'mobile': isMobile }">
-        <!-- Step indicator -->
-        <div class="step-indicator">
-          <div 
-            v-for="(step, index) in tutorialSteps" 
-            :key="index"
-            class="step-dot"
-            :class="{ 'active': currentStep === index, 'completed': currentStep > index }"
-          ></div>
-        </div>
-        
-        <!-- Tutorial card -->
-        <div class="tutorial-card" :style="cardPosition">
+          <!-- Tutorial card -->
+          <div class="tutorial-card">
           <h3>{{ currentStepData.title }}</h3>
           <p>{{ currentStepData.description }}</p>
           
@@ -151,12 +151,6 @@ const tutorialSteps: TutorialStep[] = [
 
 const currentStepData = computed(() => tutorialSteps[currentStep.value]);
 
-const cardPosition = computed(() => {
-  // Com flexbox, não precisamos mais de posicionamento manual
-  // O card sempre ficará centralizado automaticamente
-  return {};
-});
-
 const highlightStyle = computed(() => {
   const highlight = currentStepData.value.highlight;
   if (!highlight) return {};
@@ -259,28 +253,37 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-right: calc(20px + env(safe-area-inset-right));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  padding-left: calc(20px + env(safe-area-inset-left));
   pointer-events: none;
   overflow: auto;
 }
 
 .tutorial-content {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 100%;
+  max-width: 600px;
   pointer-events: none;
   
   &.mobile {
+    max-width: 100%;
+    
     .tutorial-card {
-      width: 90%;
+      width: 100%;
       max-width: 400px;
     }
   }
 }
 
 .step-indicator {
-  position: absolute;
-  top: 20px;
+  position: fixed;
+  top: 40px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -307,7 +310,6 @@ onUnmounted(() => {
 }
 
 .tutorial-card {
-  position: relative;
   background: white;
   border-radius: 12px;
   padding: 24px;
@@ -315,10 +317,11 @@ onUnmounted(() => {
   pointer-events: auto;
   max-width: min(90vw, 480px);
   width: 100%;
-  max-height: min(85vh, 600px);
+  max-height: min(70vh, 500px);
   overflow-y: auto;
   animation: tooltipEntry 0.3s ease-out;
   z-index: 1000001;
+  margin: auto;
   
   h3 {
     margin: 0 0 12px 0;
@@ -457,14 +460,44 @@ onUnmounted(() => {
 }
 
 // Responsividade
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .step-indicator {
+    top: 20px;
+  }
+  
   .tutorial-wrapper {
-    padding: 20px;
+    padding: 15px;
+    padding-top: calc(15px + env(safe-area-inset-top));
+    padding-bottom: calc(15px + env(safe-area-inset-bottom));
   }
   
   .tutorial-card {
     padding: 20px;
     max-height: 80vh;
+    max-width: calc(100vw - 30px);
+  }
+  
+  .tutorial-actions {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .tutorial-card {
+    padding: 16px;
+    max-height: 75vh;
+    
+    h3 {
+      font-size: 1.25rem;
+    }
+    
+    p {
+      font-size: 0.9rem;
+    }
   }
 }
 

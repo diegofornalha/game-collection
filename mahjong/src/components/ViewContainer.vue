@@ -20,7 +20,6 @@ import GameView from './GameView.vue';
 import MobileGameView from './MobileGameView.vue';
 
 // Lazy loading para outras views
-const HomeView = defineAsyncComponent(() => import('../views/HomeView.vue'));
 const ProfileView = defineAsyncComponent(() => import('../views/ProfileView.vue'));
 const SettingsView = defineAsyncComponent(() => import('../views/SettingsView.vue'));
 const AchievementsView = defineAsyncComponent(() => import('../views/AchievementsView.vue'));
@@ -42,7 +41,6 @@ const hasHeader = computed(() => {
 // Componente atual baseado na view
 const currentViewComponent = computed(() => {
   const viewMap = {
-    home: HomeView,
     game: isMobile.value ? MobileGameView : GameView,
     profile: ProfileView,
     settings: SettingsView,
@@ -63,7 +61,7 @@ watch(() => navigationStore.currentView, (newView, oldView) => {
     return;
   }
 
-  const viewOrder: ViewType[] = ['home', 'game', 'profile', 'settings', 'achievements'];
+  const viewOrder: ViewType[] = ['game', 'profile', 'settings', 'achievements'];
   const oldIndex = viewOrder.indexOf(oldView);
   const newIndex = viewOrder.indexOf(newView);
 
@@ -111,12 +109,12 @@ function handleNavigate(view: ViewType) {
   }
 }
 
-/* Transições */
+/* Transições - mantendo velocidade suave e consistente */
 .slide-left-enter-active,
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.5s ease-out;
 }
 
 .slide-left-enter-from {
@@ -141,7 +139,7 @@ function handleNavigate(view: ViewType) {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s ease;
 }
 
 .fade-enter-from,

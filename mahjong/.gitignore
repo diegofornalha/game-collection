@@ -46,3 +46,6 @@ src/**/*.js.map
 !src/systemjs.config.extras.js
 !src/systemjs.config.js
 !src/js/*.js
+# Sentry Config Files
+.env.sentry-build-plugin
+.env.sentry

@@ -1,11 +1,11 @@
 <template>
-  <AppModal v-if="show" :actions="modalActions">
+  <AppModal v-if="show" :actions="[]">
     <div class="level-up-content">
       <div class="level-up-animation">
         <div class="level-badge">
           <div class="level-number">{{ newLevel }}</div>
           <div class="level-stars">
-            <span v-for="i in 3" :key="i" class="star">⭐</span>
+            <span v-for="i in Math.min(newLevel, 5)" :key="i" class="star">⭐</span>
           </div>
         </div>
       </div>
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { watch } from 'vue';
 import AppModal from './AppModal.vue';
 import { audioService } from '@/services/audio.service';
 
@@ -50,20 +50,18 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const modalActions = computed(() => [
-  {
-    label: 'Continuar Jogando',
-    primary: true,
-    action: () => {
+// Auto-close modal after 2 seconds and play sound
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    // Play level up sound
+    audioService.play('levelup');
+    
+    // Auto-close after 2 seconds
+    setTimeout(() => {
       emit('close');
-    }
+    }, 2000);
   }
-]);
-
-// Play level up sound when modal shows
-if (props.show) {
-  audioService.play('levelup');
-}
+});
 </script>
 
 <style scoped>
@@ -123,13 +121,15 @@ if (props.show) {
 .level-up-title {
   font-size: 32px;
   margin: 20px 0 10px;
-  color: var(--text-primary);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .level-up-subtitle {
   font-size: 20px;
-  color: var(--text-secondary);
+  color: white;
   margin-bottom: 30px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .rewards {
@@ -145,9 +145,10 @@ if (props.show) {
   align-items: center;
   gap: 10px;
   padding: 10px 20px;
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   font-size: 18px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .reward-icon {
@@ -155,14 +156,14 @@ if (props.show) {
 }
 
 .reward-text {
-  color: var(--text-primary);
-  font-weight: 500;
+  color: #333;
+  font-weight: 600;
 }
 
 .progress-info {
   margin-top: 20px;
   font-size: 14px;
-  color: var(--text-tertiary);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 @keyframes pulse {

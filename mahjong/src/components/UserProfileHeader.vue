@@ -127,7 +127,7 @@ export default {
 .user-stats {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .action-section {
@@ -185,7 +185,7 @@ export default {
   }
   
   .user-stats {
-    gap: 1rem;
+    gap: 0.75rem;
   }
   
   /* Adjust action section on mobile */

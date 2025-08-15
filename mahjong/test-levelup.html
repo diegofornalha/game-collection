@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Modal Level Up - Mahjong</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .info {
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Teste do Modal de Level Up</h1>
+        
+        <button onclick="simulateLevelUp(2)">🎯 Simular Nível 2</button>
+        <button onclick="simulateLevelUp(3)">🎯 Simular Nível 3</button>
+        <button onclick="simulateLevelUp(5)">🎯 Simular Nível 5</button>
+        
+        <div class="info">
+            <p><strong>Alterações implementadas:</strong></p>
+            <ul style="text-align: left; list-style-position: inside;">
+                <li>✅ Texto em cor branca</li>
+                <li>✅ Modal fecha automaticamente após 2 segundos</li>
+                <li>✅ Botão "Continuar Jogando" removido</li>
+                <li>✅ Número de estrelas corresponde ao nível (máximo 5)</li>
+            </ul>
+            <p>Clique em um botão para simular o modal de level up</p>
+        </div>
+    </div>
+    
+    <script>
+        function simulateLevelUp(level) {
+            // Simular evento de level up no localStorage
+            const currentXP = localStorage.getItem('mahjong-user-xp') || 0;
+            const newXP = parseInt(currentXP) + 500;
+            localStorage.setItem('mahjong-user-xp', newXP);
+            localStorage.setItem('mahjong-user-level', level);
+            
+            // Mostrar confirmação e redirecionar para o jogo
+            alert(`Simulando level up para nível ${level}!\n\nO modal aparecerá quando você voltar ao jogo.\n\nAgora redirecionando para o jogo...`);
+            
+            // Redirecionar para o jogo
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3666/';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

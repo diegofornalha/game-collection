@@ -5,7 +5,7 @@
         <div class="modal-content">
           <slot></slot>
         </div>
-        <div class="modal-actions-wrapper">
+        <div v-if="visibleActions.length > 0" class="modal-actions-wrapper">
           <div class="modal-actions">
             <button
               v-for="(action, index) in visibleActions"
