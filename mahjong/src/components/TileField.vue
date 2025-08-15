@@ -142,6 +142,8 @@ import { useGameStateStore } from '@/stores/gameState.store';
 import { MjTile, MjTileType } from '@/models/tile.model';
 import { turtleLayout, mobileTurtleLayout, type TilePosition } from '@/data/layouts';
 import { audioService } from '@/services/audio.service';
+import { tabVisibilityManager } from '@/utils/tabVisibilityManager';
+import { TileStateCache } from '@/utils/tileStateCache';
 import GameDialog from './GameDialog.vue';
 
 const props = defineProps<{
@@ -282,43 +284,86 @@ function handleAutoShuffleExecute() {
 
 // Tab visibility recovery
 let isRecovering = ref(false);
-let lastVisibilityState = ref(true);
+let unregisterTabRecovery: (() => void) | null = null;
 
-// Handle tab visibility changes
-function handleVisibilityChange() {
-  const isCurrentlyVisible = document.visibilityState === 'visible';
-  
-  // Prevent duplicate handling
-  if (isCurrentlyVisible === lastVisibilityState.value) {
-    return;
-  }
-  
-  lastVisibilityState.value = isCurrentlyVisible;
-  console.log(`Tab visibility changed: ${isCurrentlyVisible ? 'visible' : 'hidden'}`);
-  
-  if (!isCurrentlyVisible) {
-    // Tab is being hidden - save state
-    const needsRecovery = gameStore.handleTabVisibilityChange(false);
-    console.log('Tab hidden - state saved');
+// Setup tab visibility recovery with TabVisibilityManager
+function setupTabVisibilityRecovery() {
+  return tabVisibilityManager.onRecoveryNeeded(async () => {
+    console.log('[TileField] Tab recovery callback triggered');
     
-    // Clean up WebGL resources if needed
-    cleanupResources();
-  } else {
-    // Tab is becoming visible - check if recovery needed
-    const needsRecovery = gameStore.handleTabVisibilityChange(true);
-    
-    if (needsRecovery) {
-      console.log('Tab visible - recovery needed');
-      recoverGameState();
-    } else {
-      console.log('Tab visible - no recovery needed');
-      // Just refresh dimensions
-      retrieveDimensionsFromElement();
+    if (isRecovering.value) {
+      console.log('[TileField] Recovery already in progress');
+      return;
     }
-  }
+    
+    isRecovering.value = true;
+    
+    try {
+      // Check if we need full recovery
+      const tabState = tabVisibilityManager.getState();
+      
+      if (tabState.requiresFullRecovery) {
+        console.log('[TileField] Performing full recovery');
+        
+        // Try to load from cache first
+        const cachedState = TileStateCache.loadState();
+        
+        if (cachedState && cachedState.tiles.length > 0) {
+          console.log('[TileField] Restoring from cache');
+          
+          // Restore tiles from cache
+          if (tiles.value.length === cachedState.tiles.length) {
+            TileStateCache.restoreTiles(cachedState.tiles, tiles.value);
+            
+            // Restore game state
+            gameStore.updateScore(cachedState.score - gameStore.score);
+            
+            // Force re-render
+            tiles.value = [...tiles.value];
+            await nextTick();
+            updateFreePairs();
+          } else {
+            // Cache mismatch, do full recovery
+            await recoverGameState();
+          }
+        } else {
+          // No cache, do full recovery
+          await recoverGameState();
+        }
+      } else {
+        console.log('[TileField] Performing quick refresh');
+        
+        // Quick refresh - just update dimensions and force re-render
+        retrieveDimensionsFromElement();
+        
+        // Force Vue to re-render tiles
+        if (tiles.value.length > 0) {
+          // Save state to cache for next time
+          TileStateCache.saveState(tiles.value, {
+            score: gameStore.score,
+            timer: gameStore.timer,
+            currentCombo: gameStore.currentCombo,
+            selectedTileId: selectedTile.value?.id
+          });
+          
+          // Trigger reactivity by creating new array
+          tiles.value = [...tiles.value];
+          await nextTick();
+          updateFreePairs();
+        }
+      }
+    } catch (error) {
+      console.error('[TileField] Recovery failed:', error);
+      
+      // Emergency recovery
+      await emergencyRecovery();
+    } finally {
+      isRecovering.value = false;
+    }
+  });
 }
 
-// Clean up resources when tab is hidden
+// Clean up resources when component is destroyed
 function cleanupResources() {
   // Clear any animations or timers
   if (resizeTimeout) {
@@ -491,7 +536,9 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // Setup tab visibility recovery
+  unregisterTabRecovery = setupTabVisibilityRecovery();
   
   // Only calculate dimensions, don't initialize game
   nextTick(() => {
@@ -503,10 +550,19 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  
+  // Unregister tab recovery callback
+  if (unregisterTabRecovery) {
+    unregisterTabRecovery();
+    unregisterTabRecovery = null;
+  }
+  
   if (resizeTimeout) {
     clearTimeout(resizeTimeout);
   }
+  
+  // Clean up resources
+  cleanupResources();
 });
 
 // Watch for layout changes
@@ -844,6 +900,14 @@ function onTileClick(tile: MjTile) {
       
       // Check if we need to update free pairs after a match
       updateFreePairs();
+      
+      // Save state to cache after successful match
+      TileStateCache.saveState(tiles.value, {
+        score: gameStore.score,
+        timer: gameStore.timer,
+        currentCombo: gameStore.currentCombo,
+        selectedTileId: null
+      });
       
       // Check immediately if there are still valid moves
       checkAndHandleNoMoves();

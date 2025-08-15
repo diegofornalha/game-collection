@@ -58,10 +58,10 @@
         </div>
         
         <!-- XP Ganho -->
-        <div v-if="(window as any).lastXPResult" style="background: rgba(100, 200, 255, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(100, 200, 255, 0.3); margin-bottom: 15px;">
+        <div v-if="lastXPResult" style="background: rgba(100, 200, 255, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(100, 200, 255, 0.3); margin-bottom: 15px;">
           <p style="color: #64C8FF; font-weight: bold; margin-bottom: 8px;">✨ Experiência Conquistada</p>
           <div style="font-size: 0.9em; opacity: 0.9;">
-            <p v-for="(line, index) in (window as any).lastXPResult.breakdown" :key="index" style="margin: 3px 0;">
+            <p v-for="(line, index) in lastXPResult.breakdown" :key="index" style="margin: 3px 0;">
               {{ line }}
             </p>
           </div>
@@ -158,6 +158,7 @@ import { xpCalculatorService } from '@/services/xpCalculator.service';
 import XPDisplay from './XPDisplay.vue';
 import LevelUpModal from './LevelUpModal.vue';
 import { GameDiagnostics } from '@/utils/diagnostics';
+import { tabVisibilityManager } from '@/utils/tabVisibilityManager';
 
 const gameStore = useGameStore();
 const dailyStreakStore = useDailyStreakStore();
@@ -194,6 +195,7 @@ const levelUpData = ref({
   tokensEarned: 0,
   nextLevelXP: 0
 });
+const lastXPResult = ref<any>(null);
 
 // Removido auto-restart - agora o usuário escolhe a próxima ação
 
@@ -479,7 +481,7 @@ function onTileCleared(event?: MouseEvent) {
       userProfileStore.addXP(xpResult.totalXP);
       
       // Show XP in modal (store for display)
-      (window as any).lastXPResult = xpResult;
+      lastXPResult.value = xpResult;
       
       // Check for level up before showing win modal
       if (userProfileStore.level > previousLevel) {
@@ -682,6 +684,25 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyPress);
   
+  // Initialize tab visibility manager
+  tabVisibilityManager.initialize();
+  
+  // Register recovery callback
+  const unregister = tabVisibilityManager.onRecoveryNeeded(async () => {
+    console.log('[GameView] Tab recovery triggered');
+    
+    // Force re-render of TileField
+    tileFieldKey.value = Date.now();
+    
+    // Wait for component to be ready
+    await nextTick();
+    
+    // Trigger tile field recovery if available
+    if (tileFieldRef.value) {
+      tileFieldRef.value.$forceUpdate?.();
+    }
+  });
+  
   // Run diagnostics first
   if (import.meta.env.DEV) {
     await GameDiagnostics.runFullDiagnostic();
@@ -766,14 +787,19 @@ onUnmounted(() => {
     clearInterval(autoRedirectTimer);
     autoRedirectTimer = null;
   }
+  // Clean up tab visibility manager
+  tabVisibilityManager.cleanup();
   // Store cleanup will be handled by stores themselves
   gameStore.cleanup();
 });
 
 // When component is activated (user navigates back to game view)
 onActivated(() => {
+  // Re-initialize tab visibility manager when component is activated
+  tabVisibilityManager.initialize();
+  
   // Force re-render of TileField by incrementing key
-  tileFieldKey.value++;
+  tileFieldKey.value = Date.now();
   
   // Ensure game state is properly initialized
   nextTick(() => {
