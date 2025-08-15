@@ -35,7 +35,8 @@ window.addEventListener('resize', () => {
 
 // Compute if header is visible
 const hasHeader = computed(() => {
-  return navigationStore.currentView !== 'game' || !isMobile.value;
+  // Never show header for game view
+  return navigationStore.currentView !== 'game';
 });
 
 // Componente atual baseado na view

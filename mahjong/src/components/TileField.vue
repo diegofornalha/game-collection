@@ -8,13 +8,14 @@
       paddingBottom: `${paddingBottom}px`
     }"
   >
-    <GameDialog 
+    <!-- Game Dialog removed - now using restart dialog from GameView -->
+    <!-- <GameDialog 
       v-if="paused && !isMobile" 
       sub-text="Game Paused"
       button-text="Continue"
       @action="continueGame"
       @close="continueGame"
-    />
+    /> -->
     <div 
       v-if="tilesReady && !paused && isVisible"
       class="tile-field"
@@ -279,10 +280,213 @@ function handleAutoShuffleExecute() {
   shuffleRemainingTiles();
 }
 
+// Tab visibility recovery
+let isRecovering = ref(false);
+let lastVisibilityState = ref(true);
+
+// Handle tab visibility changes
+function handleVisibilityChange() {
+  const isCurrentlyVisible = document.visibilityState === 'visible';
+  
+  // Prevent duplicate handling
+  if (isCurrentlyVisible === lastVisibilityState.value) {
+    return;
+  }
+  
+  lastVisibilityState.value = isCurrentlyVisible;
+  console.log(`Tab visibility changed: ${isCurrentlyVisible ? 'visible' : 'hidden'}`);
+  
+  if (!isCurrentlyVisible) {
+    // Tab is being hidden - save state
+    const needsRecovery = gameStore.handleTabVisibilityChange(false);
+    console.log('Tab hidden - state saved');
+    
+    // Clean up WebGL resources if needed
+    cleanupResources();
+  } else {
+    // Tab is becoming visible - check if recovery needed
+    const needsRecovery = gameStore.handleTabVisibilityChange(true);
+    
+    if (needsRecovery) {
+      console.log('Tab visible - recovery needed');
+      recoverGameState();
+    } else {
+      console.log('Tab visible - no recovery needed');
+      // Just refresh dimensions
+      retrieveDimensionsFromElement();
+    }
+  }
+}
+
+// Clean up resources when tab is hidden
+function cleanupResources() {
+  // Clear any animations or timers
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = null;
+  }
+  
+  // Clear hint animations
+  showHints.value = false;
+  
+  // Clear selected tile animations
+  if (selectedTile.value) {
+    selectedTile.value.unselect();
+  }
+}
+
+// Recover game state when tab becomes visible
+async function recoverGameState() {
+  if (isRecovering.value) return;
+  
+  isRecovering.value = true;
+  isLoading.value = true;
+  
+  try {
+    console.log('Starting state recovery...');
+    
+    // Validate tile integrity
+    const tilesValid = gameStore.validateTilesIntegrity();
+    
+    if (!tilesValid) {
+      console.log('Tiles corrupted, rebuilding...');
+      
+      // Get saved state
+      const savedState = gameStore.stateBeforeTabChange;
+      
+      if (savedState && savedState.tiles && savedState.tiles.length > 0) {
+        // Rebuild tiles from saved state
+        await rebuildTilesFromState(savedState.tiles);
+      } else {
+        // Emergency fallback - reinitialize with preserved types
+        console.log('Emergency recovery - reinitializing game');
+        await emergencyRecovery();
+      }
+    } else {
+      // Tiles are valid, just refresh display
+      console.log('Tiles valid, refreshing display');
+      forceRefreshTiles();
+    }
+    
+    // Recalculate dimensions
+    retrieveDimensionsFromElement();
+    
+    // Update free pairs
+    updateFreePairs();
+    
+    // Restore selected tile if any
+    const savedState = gameStore.stateBeforeTabChange;
+    if (savedState && savedState.selectedTileId) {
+      const tileToSelect = tiles.value.find(t => t.id === savedState.selectedTileId);
+      if (tileToSelect && tileToSelect.isFree()) {
+        tileToSelect.select();
+        selectedTile.value = tileToSelect;
+        gameStore.setSelectedTile(tileToSelect);
+      }
+    }
+    
+    console.log('Recovery completed successfully');
+  } catch (error) {
+    console.error('Recovery failed:', error);
+    // Last resort - force full refresh
+    await emergencyRecovery();
+  } finally {
+    isLoading.value = false;
+    isRecovering.value = false;
+  }
+}
+
+// Rebuild tiles from saved state
+async function rebuildTilesFromState(savedTiles: any[]) {
+  console.log('Rebuilding tiles from saved state...');
+  
+  // Clear current tiles
+  tiles.value = [];
+  
+  // Recreate tiles with saved properties
+  const newTiles: MjTile[] = [];
+  
+  for (const savedTile of savedTiles) {
+    const tile = new MjTile(savedTile.position.x, savedTile.position.y, newTiles);
+    
+    // Restore type
+    if (savedTile.type) {
+      tile.type = new MjTileType(savedTile.type.group, savedTile.type.index, savedTile.type.matchAny);
+    }
+    
+    // Restore state
+    tile.isDiscarded = savedTile.isDiscarded;
+    if (savedTile.isSelected) {
+      tile.select();
+    }
+    if (savedTile.isHinted) {
+      tile.showHint = true;
+    }
+    
+    newTiles.push(tile);
+  }
+  
+  // Sort and assign
+  newTiles.sort((a, b) => a.sortingOrder - b.sortingOrder);
+  tiles.value = newTiles;
+  
+  // Rebuild relations
+  buildTileRelationsGraph();
+  
+  // Update game store
+  gameStore.initializeGame(currentLayout.value, [...tiles.value] as MjTile[]);
+  
+  await nextTick();
+}
+
+// Force refresh all tiles
+function forceRefreshTiles() {
+  // Force Vue to re-render by updating each tile
+  for (const tile of tiles.value) {
+    tile.z = tile.z; // Trigger reactivity
+  }
+  
+  // Force a complete re-render
+  tilesReady.value = false;
+  nextTick(() => {
+    tilesReady.value = true;
+  });
+}
+
+// Emergency recovery - last resort
+async function emergencyRecovery() {
+  console.warn('Emergency recovery initiated');
+  
+  // Save current types if possible
+  if (tiles.value.length > 0) {
+    savedTileTypes.value = tiles.value.map(t => t.type);
+    savedChaosData.value = tiles.value.map(t => ({
+      offsetX: t.chaosOffsetX,
+      offsetY: t.chaosOffsetY,
+      rotation: t.chaosRotation
+    }));
+  }
+  
+  // Reinitialize with preserved data
+  initTiles(true);
+  buildTileRelationsGraph();
+  shuffleTypesFisherYates(true);
+  updateFreePairs();
+  
+  await nextTick();
+  
+  retrieveDimensionsFromElement();
+  tilesReady.value = true;
+  
+  // Update game store
+  gameStore.initializeGame(currentLayout.value, [...tiles.value] as MjTile[]);
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
   
   // Only calculate dimensions, don't initialize game
   nextTick(() => {
@@ -294,6 +498,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('auto-shuffle-execute', handleAutoShuffleExecute);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   if (resizeTimeout) {
     clearTimeout(resizeTimeout);
   }
@@ -319,6 +524,11 @@ function initializeGame() {
   buildTileRelationsGraph();
   shuffleTypesFisherYates();
   updateFreePairs();
+  
+  // Check immediately for valid moves after initial setup
+  nextTick(() => {
+    checkAndHandleNoMoves();
+  });
   
   // Calculate dimensions after DOM is ready
   requestAnimationFrame(() => {
@@ -471,6 +681,131 @@ function updateFreePairs() {
   }
 }
 
+// Auto-detection and fix for no moves
+function checkAndHandleNoMoves() {
+  // Get active tiles
+  const activeTiles = (tiles.value as MjTile[]).filter((t: MjTile) => t.active);
+  
+  // If no active tiles, game is complete
+  if (activeTiles.length === 0) {
+    return;
+  }
+  
+  // Check if there are valid moves
+  const freeTiles = activeTiles.filter((t: MjTile) => t.isFree());
+  let hasValidMoves = false;
+  
+  for (let i = 0; i < freeTiles.length && !hasValidMoves; i++) {
+    for (let j = i + 1; j < freeTiles.length; j++) {
+      if (freeTiles[i].matches(freeTiles[j])) {
+        hasValidMoves = true;
+        break;
+      }
+    }
+  }
+  
+  // If no valid moves, automatically reshuffle
+  if (!hasValidMoves && activeTiles.length > 0) {
+    console.warn('No valid moves detected! Auto-reshuffling...');
+    
+    // Show notification to player
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 140, 0, 0.95);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 12px;
+      font-size: 1.2em;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    `;
+    notification.textContent = '🔄 Redistribuindo peças automaticamente...';
+    document.body.appendChild(notification);
+    
+    // Remove notification after animation
+    setTimeout(() => {
+      notification.remove();
+    }, 2000);
+    
+    // Perform smart reshuffle after a short delay
+    setTimeout(() => {
+      performSmartReshuffle();
+    }, 500);
+  }
+}
+
+// Smart reshuffle that guarantees valid moves
+function performSmartReshuffle() {
+  const activeTiles = (tiles.value as MjTile[]).filter((t: MjTile) => t.active);
+  
+  if (activeTiles.length < 2) {
+    console.error('Not enough tiles to reshuffle');
+    return;
+  }
+  
+  // Collect all tile types
+  const tileTypes = activeTiles.map(t => t.type);
+  
+  // Try up to 100 times to find a configuration with valid moves
+  let attempts = 0;
+  const maxAttempts = 100;
+  let foundValidConfiguration = false;
+  
+  while (attempts < maxAttempts && !foundValidConfiguration) {
+    // Shuffle the types array using Fisher-Yates
+    for (let i = tileTypes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tileTypes[i], tileTypes[j]] = [tileTypes[j], tileTypes[i]];
+    }
+    
+    // Assign shuffled types to tiles
+    activeTiles.forEach((tile, index) => {
+      tile.type = tileTypes[index];
+    });
+    
+    // Check if this configuration has valid moves
+    const freeTiles = activeTiles.filter((t: MjTile) => t.isFree());
+    for (let i = 0; i < freeTiles.length && !foundValidConfiguration; i++) {
+      for (let j = i + 1; j < freeTiles.length; j++) {
+        if (freeTiles[i].matches(freeTiles[j])) {
+          foundValidConfiguration = true;
+          break;
+        }
+      }
+    }
+    
+    attempts++;
+  }
+  
+  // If still no valid configuration, force create one
+  if (!foundValidConfiguration) {
+    console.warn('Could not find valid configuration naturally, forcing pairs...');
+    const freeTiles = activeTiles.filter((t: MjTile) => t.isFree());
+    
+    if (freeTiles.length >= 2) {
+      // Force at least one matching pair on free tiles
+      const matchType = freeTiles[0].type;
+      freeTiles[1].type = matchType;
+    }
+  }
+  
+  // Update free pairs display
+  updateFreePairs();
+  
+  // Update game store
+  gameStore.tiles = [...tiles.value] as MjTile[];
+  
+  // Clear any undo/redo history after reshuffle
+  gameStore.clearUndoRedo();
+  
+  console.log('Reshuffle complete with guaranteed valid moves');
+}
+
 function onTileClick(tile: MjTile) {
   // Dismiss hint if active
   if (gameStore.showHint) {
@@ -504,6 +839,10 @@ function onTileClick(tile: MjTile) {
       
       // Check if we need to update free pairs after a match
       updateFreePairs();
+      
+      // Check immediately if there are still valid moves
+      checkAndHandleNoMoves();
+      
       emit('tileCleared');
     } else {
       // No match - return selected tile and select new one

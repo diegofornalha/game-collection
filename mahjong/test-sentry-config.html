@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Configuração do Sentry - Mahjong</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #495057;
+            margin-top: 0;
+        }
+        .code {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .filter-test {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .sensitive-data {
+            background: #ffe5e5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Teste de Configuração do Sentry - Mahjong</h1>
+        
+        <div id="status-container"></div>
+        
+        <div class="test-section">
+            <h2>📊 Status da Configuração</h2>
+            <div id="config-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 Testes de Funcionalidade</h2>
+            
+            <h3>Erros Reais (Devem ser Enviados)</h3>
+            <button onclick="testRealError()">Enviar Erro Real</button>
+            <button onclick="testGameError()">Enviar Erro do Jogo</button>
+            <button onclick="testCriticalError()">Enviar Erro Crítico</button>
+            
+            <h3>Mensagens Informativas (Devem ser Filtradas)</h3>
+            <button onclick="testInfoMessage1()">Testar: Analyzing commit strategy</button>
+            <button onclick="testInfoMessage2()">Testar: Proposing sentry-mcp-cursor</button>
+            <button onclick="testInfoMessage3()">Testar: Sentry Session Replay setup</button>
+            
+            <h3>Erros Ignorados (Devem ser Filtrados)</h3>
+            <button onclick="testIgnoredError1()">Testar: ResizeObserver</button>
+            <button onclick="testIgnoredError2()">Testar: Network request failed</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔒 Teste de Privacidade</h2>
+            <div class="sensitive-data" data-mask="true">
+                Email Sensível: user@example.com (deve ser mascarado no replay)
+            </div>
+            <div class="user-phone">
+                Telefone: (11) 98765-4321 (deve ser mascarado no replay)
+            </div>
+            <div class="game-score">
+                Score: 15000 pontos (NÃO deve ser mascarado)
+            </div>
+            <div class="level-display">
+                Level: 5 (NÃO deve ser mascarado)
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📹 Status do Session Replay</h2>
+            <div id="replay-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 Logs do Console</h2>
+            <div class="code" id="console-log"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Simular carregamento do Sentry (normalmente viria do main.ts)
+        function addStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+        
+        function addLog(message) {
+            const logContainer = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}\n`;
+        }
+        
+        // Verificar se o Sentry está carregado
+        setTimeout(() => {
+            if (typeof window.Sentry !== 'undefined') {
+                addStatus('✅ Sentry SDK carregado com sucesso!', 'success');
+                
+                // Mostrar configuração
+                const config = document.getElementById('config-status');
+                config.innerHTML = `
+                    <div class="info status">
+                        <strong>Configuração Detectada:</strong><br>
+                        • Environment: ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getOptions?.()?.environment || 'N/A'}<br>
+                        • Release: ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getOptions?.()?.release || 'N/A'}<br>
+                        • Session Replay: ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getIntegration?.('Replay') ? 'Ativo' : 'Inativo'}<br>
+                        • Traces Sample Rate: ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getOptions?.()?.tracesSampleRate || 'N/A'}<br>
+                    </div>
+                `;
+                
+                // Status do Replay
+                const replayStatus = document.getElementById('replay-status');
+                const replayIntegration = window.Sentry?.getCurrentHub?.()?.getClient?.()?.getIntegration?.('Replay');
+                if (replayIntegration) {
+                    replayStatus.innerHTML = `
+                        <div class="success status">
+                            ✅ Session Replay está ATIVO<br>
+                            • Taxa de Amostragem (Normal): ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getOptions?.()?.replaysSessionSampleRate || 'N/A'}<br>
+                            • Taxa de Amostragem (Erros): ${window.Sentry?.getCurrentHub?.()?.getClient?.()?.getOptions?.()?.replaysOnErrorSampleRate || 'N/A'}<br>
+                        </div>
+                    `;
+                } else {
+                    replayStatus.innerHTML = '<div class="warning status">⚠️ Session Replay não está ativo</div>';
+                }
+            } else {
+                addStatus('❌ Sentry SDK não encontrado. Execute npm run dev primeiro.', 'error');
+            }
+        }, 1000);
+        
+        // Funções de teste
+        window.testRealError = function() {
+            addLog('Enviando erro real para o Sentry...');
+            try {
+                throw new Error('Erro de teste do Mahjong - Este deve aparecer no dashboard');
+            } catch (e) {
+                if (window.Sentry) {
+                    window.Sentry.captureException(e);
+                    addStatus('✅ Erro real enviado ao Sentry', 'success');
+                }
+            }
+        };
+        
+        window.testGameError = function() {
+            addLog('Enviando erro do jogo...');
+            try {
+                throw new Error('Falha ao carregar nível do jogo');
+            } catch (e) {
+                if (window.Sentry) {
+                    window.Sentry.captureException(e, {
+                        tags: { component: 'game-engine' },
+                        level: 'error'
+                    });
+                    addStatus('✅ Erro do jogo enviado', 'success');
+                }
+            }
+        };
+        
+        window.testCriticalError = function() {
+            addLog('Enviando erro crítico...');
+            if (window.Sentry) {
+                window.Sentry.captureMessage('Sistema crítico falhou', 'fatal');
+                addStatus('✅ Erro crítico enviado', 'success');
+            }
+        };
+        
+        // Testes de filtragem (devem ser bloqueados)
+        window.testInfoMessage1 = function() {
+            addLog('Testando filtro: Analyzing commit strategy...');
+            if (window.Sentry) {
+                window.Sentry.captureMessage('Analyzing commit strategy for sentry-mcp-cursor', 'info');
+                addStatus('⚠️ Mensagem enviada (deve ser filtrada pelo beforeSend)', 'warning');
+                addLog('[Sentry] Esta mensagem deve ser filtrada e NÃO aparecer no dashboard');
+            }
+        };
+        
+        window.testInfoMessage2 = function() {
+            addLog('Testando filtro: Proposing sentry-mcp-cursor...');
+            if (window.Sentry) {
+                window.Sentry.captureMessage('Proposing sentry-mcp-cursor as git submodule', 'info');
+                addStatus('⚠️ Mensagem enviada (deve ser filtrada)', 'warning');
+                addLog('[Sentry] Esta mensagem deve ser filtrada e NÃO aparecer no dashboard');
+            }
+        };
+        
+        window.testInfoMessage3 = function() {
+            addLog('Testando filtro: Sentry Session Replay setup...');
+            if (window.Sentry) {
+                window.Sentry.captureMessage('Sentry Session Replay setup recommendation for Mahjong', 'info');
+                addStatus('⚠️ Mensagem enviada (deve ser filtrada)', 'warning');
+                addLog('[Sentry] Esta mensagem deve ser filtrada e NÃO aparecer no dashboard');
+            }
+        };
+        
+        window.testIgnoredError1 = function() {
+            addLog('Testando erro ignorado: ResizeObserver...');
+            try {
+                throw new Error('ResizeObserver loop limit exceeded');
+            } catch (e) {
+                if (window.Sentry) {
+                    window.Sentry.captureException(e);
+                    addStatus('⚠️ Erro enviado (deve ser filtrado)', 'warning');
+                    addLog('[Sentry] Este erro deve ser filtrado e NÃO aparecer no dashboard');
+                }
+            }
+        };
+        
+        window.testIgnoredError2 = function() {
+            addLog('Testando erro ignorado: Network request...');
+            try {
+                throw new Error('Network request failed');
+            } catch (e) {
+                if (window.Sentry) {
+                    window.Sentry.captureException(e);
+                    addStatus('⚠️ Erro enviado (deve ser filtrado)', 'warning');
+                    addLog('[Sentry] Este erro deve ser filtrado e NÃO aparecer no dashboard');
+                }
+            }
+        };
+        
+        // Interceptar console.log para mostrar filtros funcionando
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            if (args[0] && args[0].includes('[Sentry]')) {
+                addLog(args.join(' '));
+            }
+        };
+    </script>
+</body>
+</html>

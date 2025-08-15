@@ -1,0 +1,309 @@
+// Sistema de Temas Unificado para Mahjong Solitaire
+// =============================================================================
+
+// Tema Escuro (Padrão)
+:root,
+.theme-dark {
+  // Fundos
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #252525;
+  --bg-tertiary: #2d2d2d;
+  --surface-color: #2a2a2a;
+  --surface-elevated: #333333;
+  --surface-overlay: rgba(40, 40, 40, 0.95);
+  
+  // Textos
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  --text-inverse: #2c3e50;
+  
+  // Cores principais
+  --primary-color: #42b883;
+  --primary-light: #52d896;
+  --primary-dark: #33a06f;
+  --primary-rgb: 66, 184, 131;
+  
+  // Cores secundárias
+  --secondary-color: #35495e;
+  --secondary-light: #4a5f7f;
+  --secondary-dark: #263545;
+  
+  // Cores de destaque
+  --accent-color: #ffd93d;
+  --accent-light: #ffe066;
+  --accent-dark: #f9c74f;
+  
+  // Estados
+  --success-color: #51cf66;
+  --warning-color: #ff9f43;
+  --error-color: #ee5a52;
+  --info-color: #48c4e8;
+  
+  // Bordas
+  --border-color: #404040;
+  --border-light: #4d4d4d;
+  --border-dark: #333333;
+  
+  // Interações
+  --hover-bg: #333333;
+  --active-bg: #3a3a3a;
+  --focus-color: rgba(66, 184, 131, 0.5);
+  --selection-bg: rgba(66, 184, 131, 0.2);
+  
+  // Sombras
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(66, 184, 131, 0.3);
+  
+  // Overlays
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --modal-bg: rgba(26, 26, 26, 0.95);
+  
+  // Componentes específicos
+  --card-bg: var(--surface-color);
+  --button-bg: var(--surface-elevated);
+  --input-bg: var(--bg-secondary);
+  --dropdown-bg: var(--surface-elevated);
+  
+  // Glassmorphism
+  --glass-bg: rgba(40, 40, 40, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+// Tema Claro
+.theme-light {
+  // Fundos
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --surface-color: #ffffff;
+  --surface-elevated: #f8f9fa;
+  --surface-overlay: rgba(255, 255, 255, 0.95);
+  
+  // Textos
+  --text-primary: #2c3e50;
+  --text-secondary: #606c76;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  
+  // Cores principais
+  --primary-color: #42b883;
+  --primary-light: #52d896;
+  --primary-dark: #33a06f;
+  --primary-rgb: 66, 184, 131;
+  
+  // Cores secundárias
+  --secondary-color: #35495e;
+  --secondary-light: #4a5f7f;
+  --secondary-dark: #263545;
+  
+  // Cores de destaque
+  --accent-color: #f39c12;
+  --accent-light: #f4b643;
+  --accent-dark: #e67e22;
+  
+  // Estados
+  --success-color: #27ae60;
+  --warning-color: #f39c12;
+  --error-color: #e74c3c;
+  --info-color: #3498db;
+  
+  // Bordas
+  --border-color: #dee2e6;
+  --border-light: #e9ecef;
+  --border-dark: #ced4da;
+  
+  // Interações
+  --hover-bg: #f1f3f5;
+  --active-bg: #e9ecef;
+  --focus-color: rgba(66, 184, 131, 0.3);
+  --selection-bg: rgba(66, 184, 131, 0.15);
+  
+  // Sombras
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 20px rgba(66, 184, 131, 0.2);
+  
+  // Overlays
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --modal-bg: rgba(255, 255, 255, 0.95);
+  
+  // Componentes específicos
+  --card-bg: var(--surface-color);
+  --button-bg: var(--surface-elevated);
+  --input-bg: var(--bg-secondary);
+  --dropdown-bg: var(--surface-elevated);
+  
+  // Glassmorphism
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+// Tema Automático (segue preferência do sistema)
+@media (prefers-color-scheme: dark) {
+  .theme-auto {
+    // Copiar variáveis do tema dark ao invés de usar @extend
+    --primary: #ffc107;
+    --primary-hover: #ffcd38;
+    --secondary: #8b6f47;
+    --tertiary: #d4a574;
+    
+    --background: #1a1a1a;
+    --surface: #2c2c2c;
+    --surface-hover: #3a3a3a;
+    
+    --text-primary: #f0e6d2;
+    --text-secondary: rgba(240, 230, 210, 0.8);
+    --text-tertiary: rgba(240, 230, 210, 0.6);
+    
+    --border: rgba(212, 165, 116, 0.3);
+    --shadow: rgba(0, 0, 0, 0.3);
+    
+    --success: #66bb6a;
+    --warning: #ffa726;
+    --error: #ef5350;
+    --info: #42a5f5;
+    
+    --tile-bg: linear-gradient(135deg, #f5f5dc 0%, #e8dcc0 100%);
+    --tile-border: #d4a574;
+    --tile-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --tile-selected: #ffc107;
+    --tile-hint: #66bb6a;
+    
+    --overlay: rgba(0, 0, 0, 0.7);
+    --glass-bg: rgba(44, 44, 44, 0.8);
+    --glass-border: rgba(212, 165, 116, 0.2);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .theme-auto {
+    // Copiar variáveis do tema light ao invés de usar @extend
+    --primary: #d4a574;
+    --primary-hover: #c69963;
+    --secondary: #8b6f47;
+    --tertiary: #a0826d;
+    
+    --background: #f5f5dc;
+    --surface: #ffffff;
+    --surface-hover: #f0f0f0;
+    
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    
+    --border: #e0e0e0;
+    --shadow: rgba(0, 0, 0, 0.1);
+    
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --info: #2196f3;
+    
+    --tile-bg: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+    --tile-border: #d4a574;
+    --tile-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --tile-selected: #ffc107;
+    --tile-hint: #4caf50;
+    
+    --overlay: rgba(0, 0, 0, 0.5);
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+}
+
+// Transições suaves entre temas
+* {
+  transition: background-color 0.3s ease, 
+              color 0.3s ease, 
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+// Classes utilitárias para glassmorphism
+.glass {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-subtle {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid var(--glass-border);
+}
+
+// Animações de tema
+@keyframes theme-transition {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-transitioning {
+  animation: theme-transition 0.3s ease-out;
+}
+
+// Scrollbar personalizada para cada tema
+.theme-dark {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-secondary);
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--border-light);
+    }
+  }
+}
+
+.theme-light {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-secondary);
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--border-dark);
+    }
+  }
+}

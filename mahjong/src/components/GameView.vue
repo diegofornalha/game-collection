@@ -34,39 +34,50 @@
 
     <!-- Win Modal -->
     <AppModal v-if="showWinModal" :actions="winModalActions">
-      <h1>🎉 Parabéns!</h1>
-      <p>Você removeu todas as peças com sucesso!</p>
-      <p><strong>Sua pontuação final: {{ gameStore.score }}</strong></p>
-      
-      <!-- XP Breakdown -->
-      <div v-if="(window as any).lastXPResult" style="margin: 15px 0; padding: 10px; background: rgba(255, 215, 0, 0.1); border-radius: 8px; border: 2px solid #FFD700;">
-        <p style="margin: 5px 0; color: #FFD700;">
-          <strong>✨ Experiência Ganha ✨</strong>
+      <div class="victory-content">
+        <h1 style="color: #FFD700; font-size: 2.5em; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">🏆 Vitória! 🏆</h1>
+        
+        <!-- Ofensiva Liberada -->
+        <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2)); padding: 20px; border-radius: 12px; border: 2px solid #FFD700; margin-bottom: 20px;">
+          <h2 style="color: #FFA500; margin-bottom: 10px; font-size: 1.5em;">
+            🔥 Ofensiva Liberada! 🔥
+          </h2>
+          <p style="font-size: 1.1em; margin-bottom: 10px;">
+            Você completou o desafio e liberou uma nova ofensiva!
+          </p>
+          <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+            <div style="text-align: center;">
+              <p style="color: #FFD700; font-size: 2em; font-weight: bold; margin: 0;">{{ dailyStreakStore.streakData.currentStreak || 1 }}</p>
+              <p style="font-size: 0.9em; opacity: 0.8;">{{ dailyStreakStore.streakData.currentStreak === 1 ? 'dia' : 'dias' }} de ofensiva</p>
+            </div>
+            <div style="text-align: center;">
+              <p style="color: #FFD700; font-size: 2em; font-weight: bold; margin: 0;">{{ gameStore.score }}</p>
+              <p style="font-size: 0.9em; opacity: 0.8;">pontos conquistados</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- XP Ganho -->
+        <div v-if="(window as any).lastXPResult" style="background: rgba(100, 200, 255, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(100, 200, 255, 0.3); margin-bottom: 15px;">
+          <p style="color: #64C8FF; font-weight: bold; margin-bottom: 8px;">✨ Experiência Conquistada</p>
+          <div style="font-size: 0.9em; opacity: 0.9;">
+            <p v-for="(line, index) in (window as any).lastXPResult.breakdown" :key="index" style="margin: 3px 0;">
+              {{ line }}
+            </p>
+          </div>
+        </div>
+        
+        <p style="font-size: 1.1em; margin-top: 15px;">
+          Continue sua jornada e aumente sua sequência de ofensivas!
         </p>
-        <div style="margin: 10px 0; font-size: 0.9em;">
-          <p v-for="(line, index) in (window as any).lastXPResult.breakdown" :key="index" style="margin: 3px 0;">
-            {{ line }}
+        
+        <!-- Auto redirect countdown -->
+        <div style="margin-top: 20px; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+          <p style="color: #FFA500; font-size: 0.9em;">
+            Redirecionando para o perfil em <strong>{{ autoRedirectCountdown }}</strong> segundos...
           </p>
         </div>
       </div>
-      
-      <!-- Ofensiva concluída -->
-      <div v-if="dailyStreakStore.isStreakActive" style="margin: 15px 0; padding: 10px; background: rgba(255, 200, 0, 0.1); border-radius: 8px; border: 2px solid #FFC000;">
-        <p style="margin: 5px 0; color: #FFA500;">
-          <strong>🔥 Ofensiva Diária Concluída! 🔥</strong>
-        </p>
-        <p style="margin: 5px 0;">
-          Ofensiva atual: <strong>{{ dailyStreakStore.streakData.currentStreak }} {{ dailyStreakStore.streakData.currentStreak === 1 ? 'dia' : 'dias' }}</strong>
-        </p>
-        <p v-if="dailyStreakStore.nextReward" style="margin: 5px 0; font-size: 0.9em;">
-          Próxima recompensa em {{ dailyStreakStore.daysUntilNextReward }} {{ dailyStreakStore.daysUntilNextReward === 1 ? 'dia' : 'dias' }}
-        </p>
-      </div>
-      
-      <p>Muito bem jogado! Pronto para outra jornada?</p>
-      <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
-        Novo jogo iniciará automaticamente em 5 segundos...
-      </p>
     </AppModal>
 
     <!-- Auto-shuffle notification removed - now instant shuffle -->
@@ -95,6 +106,7 @@
       <div class="gamefield noselect">
         <TileField
           ref="tileFieldRef"
+          :key="tileFieldKey"
           :layout="currentLayout"
           :paused="gameStore.isPaused"
           @ready="onTileCollectionReady"
@@ -129,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, onActivated, nextTick, watch } from 'vue';
 import { useGameStore } from '@/stores/game.store';
 import { useDailyStreakStore } from '@/stores/gamification/dailyStreak.store';
 import { useUserProfileStore } from '@/stores/gamification/userProfile.store';
@@ -145,6 +157,7 @@ import { storageService } from '@/services/storage.service';
 import { xpCalculatorService } from '@/services/xpCalculator.service';
 import XPDisplay from './XPDisplay.vue';
 import LevelUpModal from './LevelUpModal.vue';
+import { GameDiagnostics } from '@/utils/diagnostics';
 
 const gameStore = useGameStore();
 const dailyStreakStore = useDailyStreakStore();
@@ -157,12 +170,17 @@ const tileFieldRef = ref<InstanceType<typeof TileField> | null>(null);
 // Check if running inside MobileGameView
 const isInMobileView = ref(false);
 
+// Force re-render key
+const tileFieldKey = ref(0);
+
 // Modal states
 const showMainMenu = ref(false);
 const showRestartDialog = ref(false);
 const showTieModal = ref(false);
 const showWinModal = ref(false);
 const showLevelUpModal = ref(false);
+const autoRedirectCountdown = ref(8);
+let autoRedirectTimer: NodeJS.Timeout | null = null;
 
 // Game state
 const currentLayout = ref('default');
@@ -177,18 +195,7 @@ const levelUpData = ref({
   nextLevelXP: 0
 });
 
-// Auto-start new game after win modal
-watch(showWinModal, (newValue) => {
-  if (newValue) {
-    // Auto-close and start new game after 5 seconds
-    setTimeout(() => {
-      if (showWinModal.value) {
-        showWinModal.value = false;
-        startNewGame();
-      }
-    }, 5000);
-  }
-});
+// Removido auto-restart - agora o usuário escolhe a próxima ação
 
 // Modal actions
 const mainMenuModalActions = computed(() => {
@@ -273,18 +280,57 @@ const tieModalActions = [
 
 const winModalActions = [
   {
-    label: 'Jogar Novamente',
+    label: '🔥 Ver Ofensivas',
     primary: true,
     action: () => {
+      if (autoRedirectTimer) {
+        clearInterval(autoRedirectTimer);
+        autoRedirectTimer = null;
+      }
+      showWinModal.value = false;
+      navigationStore.navigateTo('profile');
+    }
+  },
+  {
+    label: 'Jogar Novamente',
+    primary: false,
+    action: () => {
+      if (autoRedirectTimer) {
+        clearInterval(autoRedirectTimer);
+        autoRedirectTimer = null;
+      }
       showWinModal.value = false;
       startNewGame();
     }
   }
 ];
 
+// Emergency cache clear function
+async function clearAllGameData() {
+  try {
+    // Clear all storage
+    await storageService.remove('currentGame', 1);
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset game state
+    gameStore.$reset?.();
+    
+    // Force complete re-render
+    tileFieldKey.value = Date.now(); // Use timestamp for unique key
+    
+    console.log('All game data cleared');
+  } catch (error) {
+    console.error('Failed to clear game data:', error);
+  }
+}
+
 // Game methods
 function startNewGame() {
   showMainMenu.value = false;
+  
+  // Force re-render of TileField when starting new game
+  tileFieldKey.value++;
   
   // Verificar e atualizar daily streak
   dailyStreakStore.checkAndUpdateStreak();
@@ -297,8 +343,16 @@ function startNewGame() {
   });
 }
 
+// Expose emergency clear function to window for debugging
+if (import.meta.env.DEV) {
+  (window as any).clearGameCache = clearAllGameData;
+}
+
 async function continueGame() {
   showMainMenu.value = false;
+  
+  // Force re-render when continuing game
+  tileFieldKey.value++;
   
   // Verificar e atualizar daily streak
   dailyStreakStore.checkAndUpdateStreak();
@@ -310,13 +364,32 @@ async function continueGame() {
 async function loadSavedGame() {
   try {
     const savedGame = await storageService.get('currentGame', 1);
-    if (savedGame && tileFieldRef.value) {
-      // Load the saved game state
-      await tileFieldRef.value.loadSavedGame(savedGame);
+    
+    // Validate saved game before loading
+    if (savedGame && typeof savedGame === 'object' && savedGame.tiles && Array.isArray(savedGame.tiles)) {
+      // Force re-render before loading saved game
+      tileFieldKey.value++;
+      await nextTick();
+      
+      if (tileFieldRef.value) {
+        // Load the saved game state
+        await tileFieldRef.value.loadSavedGame(savedGame);
+      }
+    } else {
+      console.warn('Invalid or missing saved game, starting new game');
+      // Clear invalid data
+      await storageService.remove('currentGame', 1);
+      startNewGame();
     }
   } catch (error) {
     console.error('Failed to load saved game:', error);
-    // Fall back to new game if loading fails
+    // Clear corrupted data and fall back to new game
+    try {
+      await storageService.remove('currentGame', 1);
+      localStorage.removeItem('gameState');
+    } catch (e) {
+      console.error('Failed to clear data:', e);
+    }
     startNewGame();
   }
 }
@@ -370,7 +443,7 @@ function onTileCleared(event?: MouseEvent) {
   // Remove after animation
   setTimeout(() => {
     xpDisplays.value = xpDisplays.value.filter(xp => xp.id !== xpDisplay.id);
-  }, 2500);
+  }, 1000);
   
   // Add XP to user profile
   const previousLevel = userProfileStore.level;
@@ -426,6 +499,23 @@ function onTileCleared(event?: MouseEvent) {
           console.log(`Bônus de streak: +${bonusTokens} tokens!`);
         }
       }
+      
+      // Iniciar countdown e auto-redirecionar
+      autoRedirectCountdown.value = 8;
+      autoRedirectTimer = setInterval(() => {
+        autoRedirectCountdown.value--;
+        if (autoRedirectCountdown.value <= 0) {
+          if (autoRedirectTimer) {
+            clearInterval(autoRedirectTimer);
+            autoRedirectTimer = null;
+          }
+          if (showWinModal.value) {
+            showWinModal.value = false;
+            // Redirecionar para o perfil para ver as ofensivas
+            navigationStore.navigateTo('profile');
+          }
+        }
+      }, 1000);
     } else {
       // No more moves
       showTieModal.value = true;
@@ -505,6 +595,16 @@ function handleKeyPress(event: KeyboardEvent) {
         // Toggle music
         gameStore.toggleMusic();
         break;
+      case 'r':
+        event.preventDefault();
+        if (event.shiftKey) {
+          // Shift+Ctrl+R: Clear all game data and restart
+          console.log('Emergency cache clear triggered');
+          clearAllGameData().then(() => {
+            window.location.reload();
+          });
+        }
+        break;
     }
     return;
   }
@@ -543,8 +643,8 @@ function handleKeyPress(event: KeyboardEvent) {
       break;
     case 'escape':
       event.preventDefault();
-      // Pause the game instead of going to home
-      gameStore.pauseGame();
+      // Show restart dialog when ESC is pressed
+      showRestartDialog.value = true;
       break;
     case 'f':
       event.preventDefault();
@@ -582,6 +682,14 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyPress);
   
+  // Run diagnostics first
+  if (import.meta.env.DEV) {
+    await GameDiagnostics.runFullDiagnostic();
+  } else {
+    // In production, just repair if needed
+    await GameDiagnostics.repairGameState();
+  }
+  
   // Check if we're in mobile view
   const checkMobile = () => {
     isInMobileView.value = window.matchMedia('(max-width: 768px)').matches;
@@ -593,12 +701,39 @@ onMounted(async () => {
   checkMobile();
   window.addEventListener('resize', debouncedCheckMobile);
   
-  // Check for saved game
+  // Clear any corrupted saved game data that might cause rendering issues
   try {
     const savedGame = await storageService.get('currentGame', 1);
-    hasSavedGame.value = !!savedGame;
+    
+    // Validate saved game data
+    if (savedGame) {
+      // Check if saved game has valid structure
+      const isValid = savedGame && 
+                      typeof savedGame === 'object' && 
+                      savedGame.tiles && 
+                      Array.isArray(savedGame.tiles);
+      
+      if (!isValid) {
+        console.warn('Invalid saved game data detected, clearing...');
+        await storageService.remove('currentGame', 1);
+        localStorage.removeItem('gameState'); // Clear any legacy localStorage
+        hasSavedGame.value = false;
+      } else {
+        hasSavedGame.value = true;
+      }
+    } else {
+      hasSavedGame.value = false;
+    }
   } catch (error) {
     console.error('Failed to check for saved game:', error);
+    // Clear corrupted data
+    try {
+      await storageService.remove('currentGame', 1);
+      localStorage.removeItem('gameState');
+    } catch (e) {
+      console.error('Failed to clear corrupted data:', e);
+    }
+    hasSavedGame.value = false;
   }
   
   // Load sounds
@@ -614,7 +749,11 @@ onMounted(async () => {
     'coin': ['/sounds/coin1.wav', '/sounds/coin2.wav', '/sounds/coin3.wav']
   });
   
+  // Force component refresh
+  tileFieldKey.value++;
+  
   // Auto-start new game if no saved game exists
+  await nextTick();
   if (!hasSavedGame.value && !gameStore.isPlaying) {
     startNewGame();
   }
@@ -622,8 +761,64 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyPress);
+  // Limpar timer de redirecionamento
+  if (autoRedirectTimer) {
+    clearInterval(autoRedirectTimer);
+    autoRedirectTimer = null;
+  }
   // Store cleanup will be handled by stores themselves
   gameStore.cleanup();
+});
+
+// When component is activated (user navigates back to game view)
+onActivated(() => {
+  // Force re-render of TileField by incrementing key
+  tileFieldKey.value++;
+  
+  // Ensure game state is properly initialized
+  nextTick(() => {
+    if (tileFieldRef.value && gameStore.isPlaying) {
+      // Force a refresh of the tile field
+      tileFieldRef.value.$forceUpdate?.();
+    }
+  });
+});
+
+// Watch for navigation changes to game view
+watch(() => navigationStore.currentView, async (newView, oldView) => {
+  if (newView === 'game' && oldView !== 'game') {
+    // Force complete re-initialization when coming back to game view
+    tileFieldKey.value++;
+    
+    // Clear any potentially corrupted runtime state
+    await nextTick();
+    
+    // If no game is playing, ensure we start fresh
+    if (!gameStore.isPlaying) {
+      // Clear any saved state that might be corrupted
+      try {
+        const savedGame = await storageService.get('currentGame', 1);
+        if (savedGame && !savedGame.tiles) {
+          await storageService.remove('currentGame', 1);
+          hasSavedGame.value = false;
+        }
+      } catch (e) {
+        console.error('Error checking saved game:', e);
+      }
+      
+      // Start a new game if needed
+      if (!hasSavedGame.value) {
+        startNewGame();
+      }
+    }
+    
+    // Additional refresh after a small delay to ensure everything is loaded
+    setTimeout(() => {
+      if (tileFieldRef.value) {
+        tileFieldRef.value.$forceUpdate?.();
+      }
+    }, 100);
+  }
 });
 </script>
 

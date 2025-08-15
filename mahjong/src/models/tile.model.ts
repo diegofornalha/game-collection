@@ -1,5 +1,55 @@
 import { TileCharacters } from '@/types/game.types';
 
+// Diagnostic logging utility
+export class TileDiagnostics {
+  private static enabled = process.env.NODE_ENV === 'development';
+
+  static log(message: string, data?: any): void {
+    if (this.enabled) {
+      console.log(`[TILE] ${message}`, data || '');
+    }
+  }
+
+  static warn(message: string, data?: any): void {
+    if (this.enabled) {
+      console.warn(`[TILE WARNING] ${message}`, data || '');
+    }
+  }
+
+  static error(message: string, data?: any): void {
+    console.error(`[TILE ERROR] ${message}`, data || '');
+  }
+
+  static logTileState(tile: MjTile, context: string): void {
+    if (this.enabled) {
+      this.log(`${context} - Tile State`, {
+        id: tile.id,
+        position: { x: tile.x, y: tile.y, z: tile.z },
+        type: tile.type ? `${tile.type.group}[${tile.type.index}]` : 'null',
+        active: tile.active,
+        selected: tile.selected,
+        chaos: {
+          offsetX: tile.chaosOffsetX,
+          offsetY: tile.chaosOffsetY,
+          rotation: tile.chaosRotation
+        }
+      });
+    }
+  }
+
+  static logCollectionState(tiles: MjTile[], context: string): void {
+    if (this.enabled) {
+      this.log(`${context} - Collection State`, {
+        totalTiles: tiles.length,
+        activeTiles: tiles.filter(t => t.active).length,
+        selectedTiles: tiles.filter(t => t.selected).length,
+        tilesWithType: tiles.filter(t => t.type !== null).length,
+        tilesWithoutType: tiles.filter(t => t.type === null).length
+      });
+    }
+  }
+}
+
 export class MjTileType {
   public group: string;
   public index: number;
@@ -199,6 +249,10 @@ export class MjTile {
     this.active = true;
     this.updateBlockedState();
   }
+  
+  public getId(): number {
+    return this.id;
+  }
 
   public startHint(): void {
     this.showHint = true;
@@ -212,5 +266,209 @@ export class MjTile {
 
   public updateBlockedState(): void {
     this.isBlocked = !this.isFree();
+  }
+
+  // Static method for reconstructing tiles from serialized data
+  static fromSerializedData(data: SerializedTileData, collection: MjTile[]): MjTile {
+    // Validate input data
+    if (!TileValidator.isValidTileData(data)) {
+      throw new Error(`Invalid tile data: ${JSON.stringify(data)}`);
+    }
+
+    // Create new tile instance
+    const tile = new MjTile(data.x, data.y, collection, data.id);
+    
+    // Restore type if present
+    if (data.typeGroup && data.typeIndex !== null && data.typeIndex !== undefined) {
+      try {
+        tile.setType(new MjTileType(data.typeGroup, data.typeIndex, data.typeMatchAny || false));
+      } catch (error) {
+        console.warn(`Failed to restore tile type: ${data.typeGroup}[${data.typeIndex}]`, error);
+        // Continue without type - tile will be handled as untyped
+      }
+    }
+    
+    // Restore state
+    tile.active = data.active ?? true;
+    tile.selected = data.selected ?? false;
+    tile.chaosOffsetX = data.chaosOffsetX ?? 0;
+    tile.chaosOffsetY = data.chaosOffsetY ?? 0;
+    tile.chaosRotation = data.chaosRotation ?? 0;
+    tile.showHint = data.showHint ?? false;
+    tile.hasFreePair = data.hasFreePair ?? false;
+    
+    // Sync alias properties
+    tile.isSelected = tile.selected;
+    tile.isHinted = tile.showHint;
+    tile.updateBlockedState();
+    
+    return tile;
+  }
+
+  // Method to serialize tile data for storage
+  public toSerializedData(): SerializedTileData {
+    return {
+      x: this.x,
+      y: this.y,
+      z: this.z,
+      id: this.id,
+      active: this.active,
+      selected: this.selected,
+      typeGroup: this.type?.group || null,
+      typeIndex: this.type?.index ?? null,
+      typeMatchAny: this.type?.matchAny ?? false,
+      chaosOffsetX: this.chaosOffsetX,
+      chaosOffsetY: this.chaosOffsetY,
+      chaosRotation: this.chaosRotation,
+      showHint: this.showHint,
+      hasFreePair: this.hasFreePair
+    };
+  }
+}
+
+// Interface for serialized tile data
+export interface SerializedTileData {
+  x: number;
+  y: number;
+  z: number;
+  id?: number;
+  active: boolean;
+  selected: boolean;
+  typeGroup: string | null;
+  typeIndex: number | null;
+  typeMatchAny: boolean;
+  chaosOffsetX: number;
+  chaosOffsetY: number;
+  chaosRotation: number;
+  showHint: boolean;
+  hasFreePair: boolean;
+}
+
+// Validator class for tile data integrity
+export class TileValidator {
+  private static readonly VALID_GROUPS = ['ball', 'bam', 'num', 'season', 'wind', 'flower', 'dragon'];
+  private static readonly MAX_INDICES = {
+    ball: 8, bam: 8, num: 8, season: 3, wind: 3, flower: 3, dragon: 2
+  };
+
+  static isValidTileData(data: any): data is SerializedTileData {
+    if (!data || typeof data !== 'object') {
+      console.error('[TileValidator] Invalid data: not an object', data);
+      return false;
+    }
+
+    // Check required numeric fields
+    if (typeof data.x !== 'number' || typeof data.y !== 'number') {
+      console.error('[TileValidator] Invalid coordinates', { x: data.x, y: data.y });
+      return false;
+    }
+
+    // Check boolean fields
+    if (typeof data.active !== 'boolean' || typeof data.selected !== 'boolean') {
+      console.error('[TileValidator] Invalid boolean fields', { 
+        active: data.active, 
+        selected: data.selected 
+      });
+      return false;
+    }
+
+    // Validate type information
+    if (data.typeGroup !== null) {
+      if (!this.VALID_GROUPS.includes(data.typeGroup)) {
+        console.error('[TileValidator] Invalid type group:', data.typeGroup);
+        return false;
+      }
+
+      if (data.typeIndex !== null) {
+        const maxIndex = this.MAX_INDICES[data.typeGroup as keyof typeof this.MAX_INDICES];
+        if (typeof data.typeIndex !== 'number' || data.typeIndex < 0 || data.typeIndex > maxIndex) {
+          console.error('[TileValidator] Invalid type index:', {
+            group: data.typeGroup,
+            index: data.typeIndex,
+            maxAllowed: maxIndex
+          });
+          return false;
+        }
+      }
+    }
+
+    // Validate chaos values (should be reasonable)
+    if (typeof data.chaosOffsetX === 'number' && Math.abs(data.chaosOffsetX) > 50) {
+      console.warn('[TileValidator] Unusual chaosOffsetX value:', data.chaosOffsetX);
+    }
+    if (typeof data.chaosOffsetY === 'number' && Math.abs(data.chaosOffsetY) > 50) {
+      console.warn('[TileValidator] Unusual chaosOffsetY value:', data.chaosOffsetY);
+    }
+    if (typeof data.chaosRotation === 'number' && Math.abs(data.chaosRotation) > 360) {
+      console.warn('[TileValidator] Unusual chaosRotation value:', data.chaosRotation);
+    }
+
+    return true;
+  }
+
+  static sanitizeTileData(data: any): SerializedTileData {
+    const sanitized: SerializedTileData = {
+      x: Number(data.x) || 0,
+      y: Number(data.y) || 0,
+      z: Number(data.z) || 0,
+      id: data.id ? Number(data.id) : undefined,
+      active: Boolean(data.active),
+      selected: Boolean(data.selected),
+      typeGroup: (typeof data.typeGroup === 'string' && this.VALID_GROUPS.includes(data.typeGroup)) 
+        ? data.typeGroup : null,
+      typeIndex: (data.typeGroup && typeof data.typeIndex === 'number') 
+        ? Math.max(0, Math.min(data.typeIndex, this.MAX_INDICES[data.typeGroup as keyof typeof this.MAX_INDICES] || 0))
+        : null,
+      typeMatchAny: Boolean(data.typeMatchAny),
+      chaosOffsetX: Number(data.chaosOffsetX) || 0,
+      chaosOffsetY: Number(data.chaosOffsetY) || 0,
+      chaosRotation: Number(data.chaosRotation) || 0,
+      showHint: Boolean(data.showHint),
+      hasFreePair: Boolean(data.hasFreePair)
+    };
+
+    // Clamp chaos values to reasonable ranges
+    sanitized.chaosOffsetX = Math.max(-50, Math.min(50, sanitized.chaosOffsetX));
+    sanitized.chaosOffsetY = Math.max(-50, Math.min(50, sanitized.chaosOffsetY));
+    sanitized.chaosRotation = Math.max(-360, Math.min(360, sanitized.chaosRotation));
+
+    return sanitized;
+  }
+
+  static validateGameState(gameState: any): boolean {
+    if (!gameState || typeof gameState !== 'object') {
+      console.error('[TileValidator] Invalid game state: not an object');
+      return false;
+    }
+
+    if (typeof gameState.layout !== 'string') {
+      console.error('[TileValidator] Invalid layout:', gameState.layout);
+      return false;
+    }
+
+    if (!Array.isArray(gameState.tiles)) {
+      console.error('[TileValidator] Invalid tiles array:', gameState.tiles);
+      return false;
+    }
+
+    if (typeof gameState.score !== 'number' || gameState.score < 0) {
+      console.error('[TileValidator] Invalid score:', gameState.score);
+      return false;
+    }
+
+    if (typeof gameState.timer !== 'number' || gameState.timer < 0) {
+      console.error('[TileValidator] Invalid timer:', gameState.timer);
+      return false;
+    }
+
+    // Validate each tile
+    for (let i = 0; i < gameState.tiles.length; i++) {
+      if (!this.isValidTileData(gameState.tiles[i])) {
+        console.error(`[TileValidator] Invalid tile at index ${i}:`, gameState.tiles[i]);
+        return false;
+      }
+    }
+
+    return true;
   }
 }

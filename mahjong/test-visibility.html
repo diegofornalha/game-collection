@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Visibilidade de Aba</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        h1 {
+            color: #42b883;
+        }
+        
+        .status {
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .visible {
+            background: #1b4332;
+            border: 2px solid #42b883;
+        }
+        
+        .hidden {
+            background: #4a1a1a;
+            border: 2px solid #dc2626;
+        }
+        
+        .log {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+        
+        .timestamp {
+            color: #6b7280;
+            margin-right: 10px;
+        }
+        
+        button {
+            background: #42b883;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #35976d;
+        }
+        
+        .info {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Teste de Visibilidade de Aba - Mahjong</h1>
+    
+    <div class="info">
+        <h2>📋 Instruções de Teste:</h2>
+        <ol>
+            <li>Abra o jogo em outra aba: <a href="http://localhost:3668" target="_blank" style="color: #42b883;">http://localhost:3668</a></li>
+            <li>Inicie um novo jogo</li>
+            <li>Faça algumas jogadas</li>
+            <li>Mude para outra aba (esta ou qualquer outra)</li>
+            <li>Aguarde alguns segundos</li>
+            <li>Volte para a aba do jogo</li>
+            <li>Verifique se as peças renderizam corretamente</li>
+        </ol>
+    </div>
+    
+    <div id="status" class="status visible">
+        <h2>Status da Aba: <span id="visibility-state">Visível</span></h2>
+        <p>Mudanças de visibilidade: <span id="change-count">0</span></p>
+        <p>Última mudança: <span id="last-change">-</span></p>
+    </div>
+    
+    <div>
+        <button onclick="simulateTabSwitch()">Simular Mudança de Aba</button>
+        <button onclick="clearLog()">Limpar Log</button>
+        <button onclick="testRecovery()">Testar Recuperação</button>
+    </div>
+    
+    <h3>📊 Log de Eventos:</h3>
+    <div id="log" class="log">
+        <div class="log-entry">
+            <span class="timestamp">[00:00:00]</span>
+            Monitor de visibilidade iniciado...
+        </div>
+    </div>
+    
+    <script>
+        let changeCount = 0;
+        let logEntries = [];
+        
+        function addLogEntry(message, type = 'info') {
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString('pt-BR');
+            const entry = {
+                timestamp,
+                message,
+                type
+            };
+            
+            logEntries.push(entry);
+            
+            const logDiv = document.getElementById('log');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'log-entry';
+            entryDiv.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span style="color: ${type === 'error' ? '#ef4444' : type === 'success' ? '#42b883' : '#fff'}">
+                    ${message}
+                </span>
+            `;
+            logDiv.appendChild(entryDiv);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(isVisible) {
+            const statusDiv = document.getElementById('status');
+            const stateSpan = document.getElementById('visibility-state');
+            const countSpan = document.getElementById('change-count');
+            const lastChangeSpan = document.getElementById('last-change');
+            
+            changeCount++;
+            
+            if (isVisible) {
+                statusDiv.className = 'status visible';
+                stateSpan.textContent = 'Visível';
+                addLogEntry('✅ Aba tornou-se VISÍVEL - Recovery será acionado se necessário', 'success');
+            } else {
+                statusDiv.className = 'status hidden';
+                stateSpan.textContent = 'Oculta';
+                addLogEntry('⏸️ Aba tornou-se OCULTA - Estado salvo', 'info');
+            }
+            
+            countSpan.textContent = changeCount;
+            lastChangeSpan.textContent = new Date().toLocaleTimeString('pt-BR');
+        }
+        
+        // Monitor de visibilidade
+        document.addEventListener('visibilitychange', () => {
+            const isVisible = document.visibilityState === 'visible';
+            updateStatus(isVisible);
+            
+            // Log detalhado
+            addLogEntry(`document.visibilityState: ${document.visibilityState}`);
+            addLogEntry(`document.hidden: ${document.hidden}`);
+            
+            if (!isVisible) {
+                addLogEntry('💾 Salvando estado do jogo...');
+                addLogEntry('🧹 Limpando recursos (animações, timers)...');
+            } else {
+                addLogEntry('🔍 Verificando integridade das peças...');
+                addLogEntry('🔄 Iniciando processo de recuperação se necessário...');
+            }
+        });
+        
+        // Simular mudança de aba
+        function simulateTabSwitch() {
+            addLogEntry('⚡ Simulando mudança de aba...', 'info');
+            
+            // Simular aba oculta
+            setTimeout(() => {
+                addLogEntry('📱 Simulação: Aba ficando oculta');
+                updateStatus(false);
+            }, 500);
+            
+            // Simular aba visível novamente
+            setTimeout(() => {
+                addLogEntry('📱 Simulação: Aba ficando visível');
+                updateStatus(true);
+            }, 3000);
+        }
+        
+        // Limpar log
+        function clearLog() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = `
+                <div class="log-entry">
+                    <span class="timestamp">[${new Date().toLocaleTimeString('pt-BR')}]</span>
+                    Log limpo. Monitoramento continua...
+                </div>
+            `;
+            logEntries = [];
+        }
+        
+        // Testar recuperação
+        function testRecovery() {
+            addLogEntry('🧪 Testando sistema de recuperação...', 'info');
+            
+            // Verificar se a API está disponível
+            if ('visibilityState' in document) {
+                addLogEntry('✅ Page Visibility API disponível');
+                addLogEntry(`Estado atual: ${document.visibilityState}`);
+            } else {
+                addLogEntry('❌ Page Visibility API não disponível', 'error');
+            }
+            
+            // Verificar localStorage
+            try {
+                const gameState = localStorage.getItem('gameState');
+                if (gameState) {
+                    const parsed = JSON.parse(gameState);
+                    addLogEntry('✅ Estado do jogo encontrado no localStorage');
+                    addLogEntry(`Peças salvas: ${parsed.tiles ? parsed.tiles.length : 0}`);
+                } else {
+                    addLogEntry('ℹ️ Nenhum estado salvo encontrado');
+                }
+            } catch (e) {
+                addLogEntry('❌ Erro ao ler estado salvo: ' + e.message, 'error');
+            }
+        }
+        
+        // Log inicial
+        addLogEntry('🚀 Sistema de monitoramento iniciado');
+        addLogEntry(`Page Visibility API: ${'visibilityState' in document ? 'Disponível' : 'Não disponível'}`);
+        addLogEntry(`Estado inicial: ${document.visibilityState}`);
+    </script>
+</body>
+</html>

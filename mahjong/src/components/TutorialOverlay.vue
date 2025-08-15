@@ -229,6 +229,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
 @use '@/assets/styles/variables' as *;
 
 .tutorial-overlay {
@@ -363,7 +364,7 @@ onUnmounted(() => {
       color: white;
       
       &:hover {
-        background: darken($primary, 10%);
+        background: color.adjust($primary, $lightness: -10%);
         transform: translateY(-1px);
       }
     }

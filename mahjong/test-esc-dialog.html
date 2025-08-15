@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste do Diálogo de Restart com ESC</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .info {
+            color: #2196F3;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎮 Teste do Diálogo de Restart com ESC</h1>
+        
+        <div class="test-section">
+            <h2>📋 Instruções de Teste</h2>
+            <ol>
+                <li>Abra o jogo no iframe abaixo</li>
+                <li>Inicie um novo jogo</li>
+                <li>Pressione a tecla <strong>ESC</strong> no teclado</li>
+                <li>Verifique se o diálogo de restart aparece com as opções:
+                    <ul>
+                        <li>Embaralhar Restantes</li>
+                        <li>Reiniciar Atual</li>
+                        <li>Novo Jogo</li>
+                        <li>Cancelar</li>
+                    </ul>
+                </li>
+                <li>Teste também clicando no botão de restart (ícone de seta circular)</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 Testes Automatizados</h2>
+            <button class="test-button" onclick="testEscKey()">Simular Tecla ESC</button>
+            <button class="test-button" onclick="testRestartButton()">Testar Botão Restart</button>
+            <button class="test-button" onclick="checkDialogVisibility()">Verificar Visibilidade do Diálogo</button>
+            
+            <div id="status" class="status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎮 Jogo Mahjong</h2>
+            <iframe id="gameFrame" src="http://localhost:3668/"></iframe>
+        </div>
+    </div>
+    
+    <script>
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            const messageClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            statusDiv.innerHTML += `<div class="${messageClass}">[${timestamp}] ${message}</div>`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+        
+        function testEscKey() {
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                addStatus('Simulando tecla ESC...', 'info');
+                
+                // Criar e disparar evento de tecla ESC
+                const escEvent = new KeyboardEvent('keydown', {
+                    key: 'Escape',
+                    code: 'Escape',
+                    keyCode: 27,
+                    which: 27,
+                    bubbles: true,
+                    cancelable: true
+                });
+                
+                iframeDoc.dispatchEvent(escEvent);
+                iframe.contentWindow.dispatchEvent(escEvent);
+                
+                // Verificar se o diálogo apareceu após um pequeno delay
+                setTimeout(() => {
+                    checkDialogVisibility();
+                }, 500);
+                
+                addStatus('Tecla ESC simulada com sucesso!', 'success');
+            } catch (error) {
+                addStatus(`Erro ao simular ESC: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRestartButton() {
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                addStatus('Procurando botão de restart...', 'info');
+                
+                // Procurar o botão de restart
+                const restartButton = iframeDoc.querySelector('.restart.highlight');
+                
+                if (restartButton) {
+                    restartButton.click();
+                    addStatus('Botão de restart clicado!', 'success');
+                    
+                    setTimeout(() => {
+                        checkDialogVisibility();
+                    }, 500);
+                } else {
+                    addStatus('Botão de restart não encontrado. Certifique-se de que o jogo está carregado.', 'error');
+                }
+            } catch (error) {
+                addStatus(`Erro ao testar botão: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkDialogVisibility() {
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                addStatus('Verificando visibilidade do diálogo...', 'info');
+                
+                // Procurar por modais visíveis
+                const modals = iframeDoc.querySelectorAll('.app-modal, .game-dialog-backdrop');
+                let dialogFound = false;
+                
+                modals.forEach(modal => {
+                    const computedStyle = iframe.contentWindow.getComputedStyle(modal);
+                    if (computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden') {
+                        dialogFound = true;
+                        
+                        // Verificar o conteúdo do diálogo
+                        const hasRestartOptions = modal.textContent.includes('Embaralhar Restantes') ||
+                                                 modal.textContent.includes('Shuffle Remaining');
+                        
+                        if (hasRestartOptions) {
+                            addStatus('✅ Diálogo de restart encontrado e visível com todas as opções!', 'success');
+                            
+                            // Listar as opções encontradas
+                            const buttons = modal.querySelectorAll('button');
+                            if (buttons.length > 0) {
+                                addStatus(`Opções encontradas: ${Array.from(buttons).map(b => b.textContent.trim()).join(', ')}`, 'info');
+                            }
+                        } else {
+                            addStatus('⚠️ Diálogo visível mas sem as opções de restart esperadas', 'error');
+                        }
+                    }
+                });
+                
+                if (!dialogFound) {
+                    addStatus('❌ Nenhum diálogo visível encontrado', 'error');
+                }
+                
+            } catch (error) {
+                addStatus(`Erro ao verificar diálogo: ${error.message}`, 'error');
+            }
+        }
+        
+        // Adicionar listener para detectar ESC pressionado no próprio teste
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                addStatus('ESC detectado na página de teste. Redirecionando para o jogo...', 'info');
+                testEscKey();
+            }
+        });
+        
+        // Aguardar o iframe carregar
+        document.getElementById('gameFrame').onload = function() {
+            addStatus('Jogo carregado! Pronto para testes.', 'success');
+        };
+    </script>
+</body>
+</html>

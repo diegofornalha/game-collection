@@ -38,6 +38,9 @@ export const useGameStore = defineStore('game', () => {
   const currentCombo = computed(() => stateStore.currentCombo);
   const gameStartTime = computed(() => stateStore.gameStartTime);
   const tokenAnimationTrigger = computed(() => stateStore.tokenAnimationTrigger);
+  const isTabActive = computed(() => stateStore.isTabActive);
+  const lastTabChangeTime = computed(() => stateStore.lastTabChangeTime);
+  const stateBeforeTabChange = computed(() => stateStore.stateBeforeTabChange);
   
   // Preferences from preferences store
   const preferences = computed(() => preferencesStore.preferences);
@@ -158,6 +161,23 @@ export const useGameStore = defineStore('game', () => {
     actionsStore.cleanup();
   }
   
+  // Tab visibility management
+  function handleTabVisibilityChange(isVisible: boolean) {
+    return stateStore.handleTabVisibilityChange(isVisible);
+  }
+  
+  function validateTilesIntegrity() {
+    return stateStore.validateTilesIntegrity();
+  }
+  
+  function getStateSnapshot() {
+    return stateStore.getStateSnapshot();
+  }
+  
+  function restoreFromSnapshot(snapshot: any) {
+    return stateStore.restoreFromSnapshot(snapshot);
+  }
+  
   return {
     // State
     tiles,
@@ -182,6 +202,9 @@ export const useGameStore = defineStore('game', () => {
     currentCombo,
     gameStartTime,
     tokenAnimationTrigger,
+    isTabActive,
+    lastTabChangeTime,
+    stateBeforeTabChange,
     
     // Preferences
     preferences,
@@ -221,6 +244,12 @@ export const useGameStore = defineStore('game', () => {
     setAutoShuffleDelay,
     cancelAutoShuffle,
     hasValidMovesCheck,
-    cleanup
+    cleanup,
+    
+    // Tab visibility management
+    handleTabVisibilityChange,
+    validateTilesIntegrity,
+    getStateSnapshot,
+    restoreFromSnapshot
   };
 });

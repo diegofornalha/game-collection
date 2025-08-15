@@ -48,6 +48,11 @@ export const useGameStateStore = defineStore('gameState', () => {
   const isAutoShuffling = ref(false);
   const autoShuffleCount = ref(0);
   
+  // Tab visibility state
+  const isTabActive = ref(true);
+  const lastTabChangeTime = ref(Date.now());
+  const stateBeforeTabChange = ref<any>(null);
+  
   // State management functions
   function resetState() {
     tiles.value = [];
@@ -151,6 +156,104 @@ export const useGameStateStore = defineStore('gameState', () => {
     autoShuffleCount.value++;
   }
   
+  // Tab visibility management functions
+  function handleTabVisibilityChange(isVisible: boolean) {
+    const now = Date.now();
+    
+    if (!isVisible) {
+      // Tab is being hidden - save current state
+      isTabActive.value = false;
+      lastTabChangeTime.value = now;
+      
+      // Save complete game state
+      stateBeforeTabChange.value = {
+        tiles: tiles.value.map(t => ({
+          id: t.id,
+          type: t.type,
+          isDiscarded: t.isDiscarded,
+          isSelected: t.isSelected,
+          isHinted: t.isHinted,
+          isSelectable: t.isSelectable,
+          position: t.position
+        })),
+        selectedTileId: selectedTile.value?.id || null,
+        score: score.value,
+        timer: timer.value,
+        isPaused: isPaused.value,
+        currentCombo: currentCombo.value,
+        undoStackSize: undoStack.value.length
+      };
+      
+      // Pause the game to prevent timer running
+      if (!isPaused.value) {
+        setPaused(true);
+      }
+    } else {
+      // Tab is becoming visible - restore state
+      isTabActive.value = true;
+      const timeSinceHidden = now - lastTabChangeTime.value;
+      
+      // If tab was hidden for more than 1 second, trigger recovery
+      if (timeSinceHidden > 1000 && stateBeforeTabChange.value) {
+        // Mark that we need to restore state
+        return true; // Signal that recovery is needed
+      }
+      
+      // Resume game if it was paused by tab change
+      if (isPaused.value && stateBeforeTabChange.value && !stateBeforeTabChange.value.isPaused) {
+        setPaused(false);
+      }
+    }
+    
+    return false;
+  }
+  
+  function validateTilesIntegrity(): boolean {
+    if (!tiles.value || tiles.value.length === 0) {
+      return false;
+    }
+    
+    // Check if tiles have lost their methods/properties
+    for (const tile of tiles.value) {
+      if (!tile || typeof tile.getId !== 'function') {
+        console.warn('Tile lost its methods, recovery needed');
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  function getStateSnapshot() {
+    return {
+      tiles: tiles.value,
+      selectedTile: selectedTile.value,
+      score: score.value,
+      timer: timer.value,
+      isPaused: isPaused.value,
+      isGameComplete: isGameComplete.value,
+      currentLayout: currentLayout.value,
+      moves: moves.value,
+      undoStack: undoStack.value,
+      currentCombo: currentCombo.value
+    };
+  }
+  
+  function restoreFromSnapshot(snapshot: any) {
+    if (!snapshot) return;
+    
+    // Restore basic state
+    score.value = snapshot.score || 0;
+    timer.value = snapshot.timer || 0;
+    isPaused.value = snapshot.isPaused || false;
+    isGameComplete.value = snapshot.isGameComplete || false;
+    currentLayout.value = snapshot.currentLayout || '';
+    currentCombo.value = snapshot.currentCombo || 0;
+    
+    // Note: tiles restoration should be handled by TileField component
+    // as it needs to recreate tile instances with proper methods
+  }
+  
   return {
     // State
     tiles,
@@ -178,6 +281,9 @@ export const useGameStateStore = defineStore('gameState', () => {
     tokenAnimationTrigger,
     isAutoShuffling,
     autoShuffleCount,
+    isTabActive,
+    lastTabChangeTime,
+    stateBeforeTabChange,
     
     // Actions
     resetState,
@@ -199,6 +305,10 @@ export const useGameStateStore = defineStore('gameState', () => {
     resetCombo,
     setTokenAnimation,
     setAutoShuffling,
-    incrementAutoShuffleCount
+    incrementAutoShuffleCount,
+    handleTabVisibilityChange,
+    validateTilesIntegrity,
+    getStateSnapshot,
+    restoreFromSnapshot
   };
 });

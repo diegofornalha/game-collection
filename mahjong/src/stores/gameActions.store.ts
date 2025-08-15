@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { MjTile } from '@/models/tile.model';
+import { MjTile, TileValidator, TileDiagnostics, type SerializedTileData } from '@/models/tile.model';
 import { useGameStateStore } from './gameState.store';
 import { useGamePreferencesStore } from './gamePreferences.store';
 import { useGameTimerStore } from './gameTimer.store';
@@ -18,18 +18,77 @@ export const useGameActionsStore = defineStore('gameActions', () => {
   let autoShuffleTimer: number | null = null;
   
   function initializeGame(layout: string, tilesData: MjTile[]) {
+    TileDiagnostics.log('Initializing game', { layout, tileCount: tilesData.length });
+    
+    // Validate tiles array
+    if (!Array.isArray(tilesData)) {
+      throw new Error('Invalid tiles data: must be an array');
+    }
+    
+    // Validate each tile
+    const validTiles: MjTile[] = [];
+    const invalidTiles: number[] = [];
+    
+    tilesData.forEach((tile, index) => {
+      if (tile && typeof tile.isFree === 'function' && typeof tile.x === 'number' && typeof tile.y === 'number') {
+        validTiles.push(tile);
+        TileDiagnostics.logTileState(tile, `Validated tile ${index}`);
+      } else {
+        invalidTiles.push(index);
+        TileDiagnostics.error(`Invalid tile at index ${index}`, tile);
+      }
+    });
+    
+    if (invalidTiles.length > 0) {
+      TileDiagnostics.error('Found invalid tiles during initialization', {
+        invalidIndices: invalidTiles,
+        validCount: validTiles.length,
+        totalCount: tilesData.length
+      });
+      
+      if (validTiles.length === 0) {
+        throw new Error('No valid tiles found for game initialization');
+      }
+    }
+    
     stateStore.resetState();
-    stateStore.tiles = tilesData;
+    stateStore.tiles = validTiles;
     stateStore.currentLayout = layout;
     timerStore.startTimer();
+    
+    TileDiagnostics.logCollectionState(validTiles, 'Game initialized');
     saveCurrentGame();
   }
   
   function selectTile(tile: MjTile) {
+    // Validate tile object
+    if (!tile || typeof tile !== 'object') {
+      TileDiagnostics.error('selectTile called with invalid tile', tile);
+      throw new Error('Invalid tile object provided to selectTile');
+    }
+    
     // Ensure tile has all necessary methods
-    if (!tile || typeof tile.isFree !== 'function' || !tile.isFree() || stateStore.isPaused || stateStore.isGameComplete) {
+    if (typeof tile.isFree !== 'function' || typeof tile.select !== 'function' || typeof tile.unselect !== 'function') {
+      TileDiagnostics.error('selectTile called with incomplete tile object', {
+        hasisFree: typeof tile.isFree,
+        hasSelect: typeof tile.select,
+        hasUnselect: typeof tile.unselect
+      });
+      throw new Error('Tile object missing required methods');
+    }
+    
+    // Check game state and tile availability
+    if (!tile.isFree() || stateStore.isPaused || stateStore.isGameComplete) {
+      TileDiagnostics.log('Tile selection blocked', {
+        tileId: tile.id,
+        isFree: tile.isFree(),
+        isPaused: stateStore.isPaused,
+        isGameComplete: stateStore.isGameComplete
+      });
       return;
     }
+    
+    TileDiagnostics.logTileState(tile, 'Selecting tile');
     
     if (stateStore.selectedTile === tile) {
       tile.unselect();
@@ -390,53 +449,123 @@ export const useGameActionsStore = defineStore('gameActions', () => {
   }
   
   async function saveCurrentGame() {
-    if (!stateStore.currentLayout || stateStore.isGameComplete) return;
-    
-    const savedGame = {
-      id: 1,
-      layout: stateStore.currentLayout,
-      score: stateStore.score,
-      timer: stateStore.timer,
-      moves: stateStore.moves,
-      tiles: stateStore.tiles.map(t => ({
-        x: t.x,
-        y: t.y,
-        z: t.z,
-        typeGroup: t.type ? t.type.group : '',
-        typeIndex: t.type ? t.type.index : 0,
-        active: t.active,
-        selected: t.selected,
-        chaosOffsetX: t.chaosOffsetX || 0,
-        chaosOffsetY: t.chaosOffsetY || 0,
-        chaosRotation: t.chaosRotation || 0
-      })),
-      undoStack: stateStore.undoStack.map(item => ({
-        tile1: { 
-          x: item.tile1.x, 
-          y: item.tile1.y, 
-          z: item.tile1.z, 
-          typeGroup: item.tile1.type!.group, 
-          typeIndex: item.tile1.type!.index 
-        },
-        tile2: { 
-          x: item.tile2.x, 
-          y: item.tile2.y, 
-          z: item.tile2.z, 
-          typeGroup: item.tile2.type!.group, 
-          typeIndex: item.tile2.type!.index 
-        },
-        previousScore: item.previousScore
-      })),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      completed: false
-    };
+    if (!stateStore.currentLayout || stateStore.isGameComplete) {
+      TileDiagnostics.log('Skipping game save', {
+        hasLayout: !!stateStore.currentLayout,
+        isComplete: stateStore.isGameComplete
+      });
+      return;
+    }
     
     try {
-      const plainData = JSON.parse(JSON.stringify(savedGame));
-      await storageService.save('currentGame', plainData);
+      TileDiagnostics.log('Saving current game', {
+        layout: stateStore.currentLayout,
+        tileCount: stateStore.tiles.length,
+        score: stateStore.score
+      });
+      
+      // Serialize tiles with robust error handling
+      const serializedTiles: SerializedTileData[] = [];
+      const serializationErrors: string[] = [];
+      
+      stateStore.tiles.forEach((tile, index) => {
+        try {
+          if (tile && typeof tile.toSerializedData === 'function') {
+            serializedTiles.push(tile.toSerializedData());
+          } else {
+            // Fallback serialization for tiles without the method
+            const fallbackData: SerializedTileData = {
+              x: Number(tile.x) || 0,
+              y: Number(tile.y) || 0,
+              z: Number(tile.z) || 0,
+              id: tile.id,
+              active: Boolean(tile.active),
+              selected: Boolean(tile.selected),
+              typeGroup: tile.type?.group || null,
+              typeIndex: tile.type?.index ?? null,
+              typeMatchAny: tile.type?.matchAny || false,
+              chaosOffsetX: Number(tile.chaosOffsetX) || 0,
+              chaosOffsetY: Number(tile.chaosOffsetY) || 0,
+              chaosRotation: Number(tile.chaosRotation) || 0,
+              showHint: Boolean(tile.showHint),
+              hasFreePair: Boolean(tile.hasFreePair)
+            };
+            serializedTiles.push(fallbackData);
+            TileDiagnostics.warn(`Used fallback serialization for tile ${index}`);
+          }
+        } catch (error) {
+          serializationErrors.push(`Tile ${index}: ${error}`);
+          TileDiagnostics.error(`Failed to serialize tile ${index}`, error);
+        }
+      });
+      
+      if (serializationErrors.length > 0) {
+        TileDiagnostics.warn('Tile serialization completed with errors', {
+          errorCount: serializationErrors.length,
+          errors: serializationErrors,
+          serializedCount: serializedTiles.length
+        });
+      }
+      
+      // Serialize undo stack with error handling
+      const serializedUndoStack = [];
+      for (const item of stateStore.undoStack) {
+        try {
+          if (item.tile1?.type && item.tile2?.type) {
+            serializedUndoStack.push({
+              tile1: { 
+                x: item.tile1.x, 
+                y: item.tile1.y, 
+                z: item.tile1.z, 
+                typeGroup: item.tile1.type.group, 
+                typeIndex: item.tile1.type.index 
+              },
+              tile2: { 
+                x: item.tile2.x, 
+                y: item.tile2.y, 
+                z: item.tile2.z, 
+                typeGroup: item.tile2.type.group, 
+                typeIndex: item.tile2.type.index 
+              },
+              previousScore: item.previousScore
+            });
+          } else {
+            TileDiagnostics.warn('Skipped undo item with missing tile types', item);
+          }
+        } catch (error) {
+          TileDiagnostics.error('Failed to serialize undo item', error);
+        }
+      }
+      
+      const savedGame = {
+        id: 1,
+        layout: stateStore.currentLayout,
+        score: stateStore.score,
+        timer: stateStore.timer,
+        moves: Array.isArray(stateStore.moves) ? stateStore.moves : [],
+        tiles: serializedTiles,
+        undoStack: serializedUndoStack,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completed: false,
+        version: '1.0' // Add version for future compatibility
+      };
+      
+      // Validate the saved game structure
+      if (!TileValidator.validateGameState(savedGame)) {
+        throw new Error('Generated save data failed validation');
+      }
+      
+      await storageService.save('currentGame', savedGame);
+      
+      TileDiagnostics.log('Game saved successfully', {
+        tilesCount: serializedTiles.length,
+        undoStackCount: serializedUndoStack.length,
+        errorsCount: serializationErrors.length
+      });
     } catch (error) {
-      console.error('Failed to save current game:', error);
+      TileDiagnostics.error('Failed to save current game', error);
+      // Don't throw the error to avoid breaking the game flow
     }
   }
   
@@ -480,8 +609,38 @@ export const useGameActionsStore = defineStore('gameActions', () => {
   }
   
   function cleanup() {
+    TileDiagnostics.log('Cleaning up game actions store');
     cancelAutoShuffle();
     timerStore.cleanup();
+  }
+  
+  // Add diagnostic function for debugging
+  function getDiagnosticInfo() {
+    return {
+      stateStore: {
+        tilesCount: stateStore.tiles.length,
+        activeTiles: stateStore.tiles.filter(t => t.active).length,
+        selectedTile: stateStore.selectedTile ? {
+          id: stateStore.selectedTile.id,
+          position: { 
+            x: stateStore.selectedTile.x, 
+            y: stateStore.selectedTile.y, 
+            z: stateStore.selectedTile.z 
+          }
+        } : null,
+        currentLayout: stateStore.currentLayout,
+        score: stateStore.score,
+        timer: stateStore.timer,
+        isPlaying: stateStore.isPlaying,
+        isPaused: stateStore.isPaused,
+        isGameComplete: stateStore.isGameComplete
+      },
+      autoShuffle: {
+        mutex: autoShuffleMutex,
+        timer: autoShuffleTimer !== null,
+        enabled: preferencesStore.autoShuffleEnabled
+      }
+    };
   }
   
   return {
@@ -501,6 +660,9 @@ export const useGameActionsStore = defineStore('gameActions', () => {
     saveCurrentGame,
     saveGameState,
     clearSavedGame,
-    cleanup
+    cleanup,
+    
+    // Diagnostic methods
+    getDiagnosticInfo
   };
 });

@@ -53,7 +53,6 @@ const appClasses = computed(() => ({
   'app-desktop': !isMobile.value && !isTablet.value,
   'app-portrait': isPortrait.value,
   'app-landscape': !isPortrait.value,
-  'theme-dark': gameStore.theme === 'dark',
   'has-header': showHeader.value,
   'game-view': navigationStore.currentView === 'game'
 }));
@@ -141,14 +140,7 @@ html, body {
   --min-touch-size: 56px;
 }
 
-// Dark theme
-.theme-dark {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --accent: #42b883;
-}
+// Theme styles are now handled by themes.scss
 
 // Landscape adjustments
 .app-landscape.app-mobile {
